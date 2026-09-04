@@ -1,0 +1,15 @@
+{
+  "messageType": "pacs.004.001.15",
+  "businessMessageId": "SIM-MSG-NOMAD-20260904-RETURN-0001",
+  "creationDateTime": "2026-09-04T10:00:00Z",
+  "originalPaymentId": "SIM-PAY-RTGS-20260904-0001",
+  "returnInstructionId": "SIM-RETURN-NOMAD-20260904-0001",
+  "returnedAmount": {
+    "amount": "125000.00",
+    "currency": "KZT"
+  },
+  "returningParticipantId": "SIM-PTCP-NOMAD",
+  "receivingParticipantId": "SIM-PTCP-ORDA",
+  "reasonCode": "BENEFICIARY_ACCOUNT_CLOSED",
+  "additionalInformation": "Synthetic beneficiary was closed after final settlement"
+}

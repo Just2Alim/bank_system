@@ -1,0 +1,200 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Card Processing Simulator Internal API",
+    "version": "1.0.0",
+    "description": "Per-bank tokenized card lifecycle and POS/ATM authorization contract. Card references are simulator tokens; no payment account number crosses this API."
+  },
+  "servers": [{"url": "http://card-processing-simulator:8080"}],
+  "security": [{"serviceJwt": []}],
+  "paths": {
+    "/internal/v1/cards/{cardId}": {
+      "get": {
+        "operationId": "getCard",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}, {"$ref": "#/components/parameters/CardId"}],
+        "responses": {
+          "200": {"description": "Tokenized card record.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Card"}}}},
+          "404": {"$ref": "#/components/responses/Error"}
+        }
+      }
+    },
+    "/internal/v1/authorizations": {
+      "post": {
+        "operationId": "authorizeCardOperation",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}, {"$ref": "#/components/parameters/IdempotencyKey"}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AuthorizationRequest"}}}},
+        "responses": {
+          "201": {"$ref": "#/components/responses/AuthorizationResult"},
+          "200": {"$ref": "#/components/responses/AuthorizationResult"},
+          "409": {"$ref": "#/components/responses/Error"},
+          "422": {"$ref": "#/components/responses/Error"}
+        }
+      }
+    },
+    "/internal/v1/authorizations/{authorizationId}": {
+      "get": {
+        "operationId": "getCardAuthorization",
+        "description": "Query this endpoint after an ambiguous authorization timeout.",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}, {"$ref": "#/components/parameters/AuthorizationId"}],
+        "responses": {
+          "200": {"$ref": "#/components/responses/AuthorizationResult"},
+          "404": {"$ref": "#/components/responses/Error"}
+        }
+      }
+    },
+    "/internal/v1/authorizations/{authorizationId}/reverse": {
+      "post": {
+        "operationId": "reverseCardAuthorization",
+        "description": "Releases an uncaptured hold and posts no journal.",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}, {"$ref": "#/components/parameters/IdempotencyKey"}, {"$ref": "#/components/parameters/AuthorizationId"}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AuthorizationReversalRequest"}}}},
+        "responses": {"200": {"$ref": "#/components/responses/AuthorizationResult"}, "409": {"$ref": "#/components/responses/Error"}, "422": {"$ref": "#/components/responses/Error"}}
+      }
+    },
+    "/internal/v1/captures": {
+      "post": {
+        "operationId": "captureCardAuthorization",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}, {"$ref": "#/components/parameters/IdempotencyKey"}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CaptureRequest"}}}},
+        "responses": {
+          "201": {"$ref": "#/components/responses/CaptureResult"},
+          "200": {"$ref": "#/components/responses/CaptureResult"},
+          "409": {"$ref": "#/components/responses/Error"},
+          "422": {"$ref": "#/components/responses/Error"}
+        }
+      }
+    },
+    "/internal/v1/captures/{captureId}/reverse": {
+      "post": {
+        "operationId": "reverseCardCapture",
+        "description": "Only valid before merchant settlement. Later refunds are separate transactions.",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}, {"$ref": "#/components/parameters/IdempotencyKey"}, {"$ref": "#/components/parameters/CaptureId"}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CaptureReversalRequest"}}}},
+        "responses": {"200": {"$ref": "#/components/responses/CaptureResult"}, "409": {"$ref": "#/components/responses/Error"}, "422": {"$ref": "#/components/responses/Error"}}
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {"serviceJwt": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"}},
+    "parameters": {
+      "CorrelationId": {"name": "X-Correlation-ID", "in": "header", "required": true, "schema": {"type": "string", "pattern": "^SIM-CORR-[A-Z0-9-]{8,64}$"}},
+      "IdempotencyKey": {"name": "Idempotency-Key", "in": "header", "required": true, "schema": {"type": "string", "pattern": "^SIM-IDEM-[A-Z0-9-]{8,96}$"}},
+      "CardId": {"name": "cardId", "in": "path", "required": true, "schema": {"$ref": "#/components/schemas/CardId"}},
+      "AuthorizationId": {"name": "authorizationId", "in": "path", "required": true, "schema": {"$ref": "#/components/schemas/AuthorizationId"}},
+      "CaptureId": {"name": "captureId", "in": "path", "required": true, "schema": {"$ref": "#/components/schemas/CaptureId"}}
+    },
+    "responses": {
+      "AuthorizationResult": {
+        "description": "Current idempotent authorization outcome.",
+        "headers": {"X-Correlation-ID": {"schema": {"type": "string"}}, "Idempotent-Replay": {"schema": {"type": "boolean"}}},
+        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Authorization"}}}
+      },
+      "CaptureResult": {
+        "description": "Current idempotent capture outcome.",
+        "headers": {"X-Correlation-ID": {"schema": {"type": "string"}}, "Idempotent-Replay": {"schema": {"type": "boolean"}}},
+        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Capture"}}}
+      },
+      "Error": {"description": "Safe error response.", "content": {"application/json": {"schema": {"$ref": "../json-schema/common/error.v1.schema.json"}}}}
+    },
+    "schemas": {
+      "Money": {"$ref": "../json-schema/common/money.v1.schema.json"},
+      "CardId": {"type": "string", "pattern": "^SIM-CARD-(ORDA|NOMAD|TENGRI)-[A-Z0-9-]{4,48}$"},
+      "AuthorizationId": {"type": "string", "pattern": "^SIM-AUTH-[A-Z0-9-]{8,64}$"},
+      "CaptureId": {"type": "string", "pattern": "^SIM-CAP-[A-Z0-9-]{8,64}$"},
+      "Card": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["cardId", "linkedAccountId", "displayLabel", "status", "version"],
+        "properties": {
+          "cardId": {"$ref": "#/components/schemas/CardId"},
+          "linkedAccountId": {"type": "string", "pattern": "^SIM-(ORDA|NOMAD|TENGRI)-ACC-[A-Z0-9-]{4,48}$"},
+          "displayLabel": {"type": "string", "maxLength": 64, "examples": ["SIM CARD - DEMO BETA"]},
+          "status": {"type": "string", "enum": ["INACTIVE", "ACTIVE", "SUSPENDED", "CLOSED"]},
+          "version": {"type": "integer", "minimum": 1}
+        }
+      },
+      "Acceptor": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["acceptorId", "kind", "displayName"],
+        "properties": {
+          "acceptorId": {"type": "string", "pattern": "^SIM-(MERCHANT|ATM)-[A-Z0-9-]{4,64}$"},
+          "kind": {"type": "string", "enum": ["MERCHANT", "ATM"]},
+          "displayName": {"type": "string", "maxLength": 96},
+          "category": {"type": "string", "enum": ["GROCERY", "DINING", "TRANSIT", "RETAIL", "SERVICES", "CASH_ACCESS", "OTHER"]}
+        }
+      },
+      "AuthorizationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["authorizationId", "cardId", "channel", "operation", "money", "acceptor", "expiresAt"],
+        "properties": {
+          "authorizationId": {"$ref": "#/components/schemas/AuthorizationId"},
+          "cardId": {"$ref": "#/components/schemas/CardId"},
+          "channel": {"type": "string", "enum": ["POS", "ATM"]},
+          "operation": {"type": "string", "enum": ["PURCHASE", "CASH_WITHDRAWAL"]},
+          "money": {"$ref": "#/components/schemas/Money"},
+          "acceptor": {"$ref": "#/components/schemas/Acceptor"},
+          "expiresAt": {"type": "string", "format": "date-time"}
+        }
+      },
+      "Authorization": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["authorizationId", "cardId", "status", "money", "createdAt", "updatedAt"],
+        "properties": {
+          "authorizationId": {"$ref": "#/components/schemas/AuthorizationId"},
+          "cardId": {"$ref": "#/components/schemas/CardId"},
+          "status": {"type": "string", "enum": ["PENDING_CORE", "APPROVED", "DECLINED", "REVERSED", "EXPIRED", "CAPTURED", "UNKNOWN"]},
+          "money": {"$ref": "#/components/schemas/Money"},
+          "holdId": {"type": ["string", "null"], "pattern": "^SIM-HOLD-[A-Z0-9-]{8,64}$"},
+          "declineReason": {"type": ["string", "null"], "enum": [null, "CARD_INACTIVE", "LIMIT_EXCEEDED", "INSUFFICIENT_AVAILABLE_FUNDS", "CORE_REJECTED", "INVALID_OPERATION"]},
+          "createdAt": {"type": "string", "format": "date-time"},
+          "updatedAt": {"type": "string", "format": "date-time"}
+        }
+      },
+      "AuthorizationReversalRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["reversalId", "reason"],
+        "properties": {
+          "reversalId": {"type": "string", "pattern": "^SIM-REV-[A-Z0-9-]{8,64}$"},
+          "reason": {"type": "string", "enum": ["CUSTOMER_CANCELLED", "ACCEPTOR_CANCELLED", "TIMEOUT_RECOVERY", "DUPLICATE_AUTHORIZATION"]}
+        }
+      },
+      "CaptureRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["captureId", "authorizationId", "money", "acceptorReference"],
+        "properties": {
+          "captureId": {"$ref": "#/components/schemas/CaptureId"},
+          "authorizationId": {"$ref": "#/components/schemas/AuthorizationId"},
+          "money": {"$ref": "#/components/schemas/Money"},
+          "acceptorReference": {"type": "string", "pattern": "^SIM-ACCEPT-[A-Z0-9-]{8,64}$"}
+        }
+      },
+      "Capture": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["captureId", "authorizationId", "status", "money", "updatedAt"],
+        "properties": {
+          "captureId": {"$ref": "#/components/schemas/CaptureId"},
+          "authorizationId": {"$ref": "#/components/schemas/AuthorizationId"},
+          "status": {"type": "string", "enum": ["PENDING_CORE", "CAPTURED", "REVERSED", "MERCHANT_SETTLED", "REJECTED", "UNKNOWN"]},
+          "money": {"$ref": "#/components/schemas/Money"},
+          "journalId": {"type": ["string", "null"], "pattern": "^SIM-JRN-[A-Z0-9-]{8,64}$"},
+          "updatedAt": {"type": "string", "format": "date-time"}
+        }
+      },
+      "CaptureReversalRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["reversalId", "reason"],
+        "properties": {
+          "reversalId": {"type": "string", "pattern": "^SIM-REV-[A-Z0-9-]{8,64}$"},
+          "reason": {"type": "string", "enum": ["CAPTURE_ERROR", "ACCEPTOR_CANCELLED", "DUPLICATE_CAPTURE"]}
+        }
+      }
+    }
+  }
+}

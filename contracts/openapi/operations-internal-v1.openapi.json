@@ -1,0 +1,356 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Operations Query Internal API",
+    "version": "1.0.0",
+    "description": "Eventually consistent, sanitized read models for the operations console. These responses never authorize or post financial activity."
+  },
+  "servers": [{"url": "http://operations-query:8080"}],
+  "security": [{"operatorJwt": []}],
+  "paths": {
+    "/api/v1/operations/overview": {
+      "get": {
+        "operationId": "getOperationsOverview",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}],
+        "responses": {"200": {"description": "Ecosystem summary snapshot.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Overview"}}}}}
+      }
+    },
+    "/api/v1/operations/topology": {
+      "get": {
+        "operationId": "getOperationsTopology",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}],
+        "responses": {"200": {"description": "Service and dependency health graph.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Topology"}}}}}
+      }
+    },
+    "/api/v1/operations/transactions/{transactionId}/trace": {
+      "get": {
+        "operationId": "getOperationsTransactionTrace",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}, {"$ref": "#/components/parameters/TransactionId"}],
+        "responses": {"200": {"description": "Cross-system correlation trace.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Trace"}}}}, "404": {"$ref": "#/components/responses/Error"}}
+      }
+    },
+    "/api/v1/operations/ledger/{transactionId}": {
+      "get": {
+        "operationId": "getOperationsLedgerView",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}, {"$ref": "#/components/parameters/TransactionId"}],
+        "responses": {"200": {"description": "Projected immutable journals for the transaction.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/LedgerView"}}}}, "404": {"$ref": "#/components/responses/Error"}}
+      }
+    },
+    "/api/v1/operations/settlement": {
+      "get": {
+        "operationId": "getOperationsSettlement",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}],
+        "responses": {"200": {"description": "Projected participant positions and reconciliation state.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/SettlementView"}}}}}
+      }
+    },
+    "/api/v1/operations/clearing": {
+      "get": {
+        "operationId": "getOperationsClearing",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}],
+        "responses": {"200": {"description": "Clearing-cycle projections.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ClearingView"}}}}}
+      }
+    },
+    "/api/v1/operations/events": {
+      "get": {
+        "operationId": "listOperationsEvents",
+        "parameters": [
+          {"$ref": "#/components/parameters/CorrelationId"},
+          {"name": "topic", "in": "query", "schema": {"type": "string", "maxLength": 128}},
+          {"name": "aggregateId", "in": "query", "schema": {"type": "string", "pattern": "^SIM-[A-Z]+-[A-Z0-9-]{4,80}$"}},
+          {"name": "afterSequence", "in": "query", "schema": {"type": "integer", "minimum": 0}},
+          {"name": "limit", "in": "query", "schema": {"type": "integer", "minimum": 1, "maximum": 500, "default": 100}}
+        ],
+        "responses": {"200": {"description": "Sanitized event-envelope projections.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/EventPage"}}}}}
+      }
+    },
+    "/api/v1/operations/kafka": {
+      "get": {
+        "operationId": "getOperationsKafkaView",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}],
+        "responses": {"200": {"description": "Topic throughput, consumer lag, retry and dead-letter counts.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/KafkaView"}}}}}
+      }
+    },
+    "/api/v1/operations/cards": {
+      "get": {
+        "operationId": "getOperationsCardView",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}],
+        "responses": {"200": {"description": "Per-bank card authorization and capture aggregates.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CardOperationsView"}}}}}
+      }
+    },
+    "/api/v1/operations/simulation": {
+      "get": {
+        "operationId": "getOperationsSimulationView",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}],
+        "responses": {"200": {"description": "Virtual clock and generator projections.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/SimulationView"}}}}}
+      }
+    },
+    "/api/v1/operations/stream": {
+      "get": {
+        "operationId": "streamOperationsUpdates",
+        "description": "Resumable SSE. The native EventSource uses the same-origin session cookie. Each frame id is the durable operations sequence. A reset-required event instructs the client to reload REST snapshots.",
+        "parameters": [
+          {"$ref": "#/components/parameters/CorrelationId"},
+          {"name": "Last-Event-ID", "in": "header", "required": false, "schema": {"type": "string", "pattern": "^[0-9]{1,19}$"}}
+        ],
+        "responses": {
+          "200": {
+            "description": "SSE frames with projection-updated, transaction-stage, topology-health, reset-required, or heartbeat event names.",
+            "headers": {"Cache-Control": {"schema": {"type": "string", "const": "no-cache"}}, "X-Accel-Buffering": {"schema": {"type": "string", "const": "no"}}},
+            "content": {"text/event-stream": {"schema": {"type": "string", "description": "UTF-8 SSE stream; each data line is OperationStreamEventV1 JSON."}}}
+          },
+          "401": {"$ref": "#/components/responses/Error"}
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {"operatorJwt": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"}},
+    "parameters": {
+      "CorrelationId": {"name": "X-Correlation-ID", "in": "header", "required": true, "schema": {"type": "string", "pattern": "^SIM-CORR-[A-Z0-9-]{8,64}$"}},
+      "TransactionId": {"name": "transactionId", "in": "path", "required": true, "schema": {"type": "string", "pattern": "^SIM-(TXN|PAY|AUTH|CAP)-[A-Z0-9-]{8,64}$"}}
+    },
+    "responses": {
+      "Error": {"description": "Safe error response.", "content": {"application/json": {"schema": {"$ref": "../json-schema/common/error.v1.schema.json"}}}}
+    },
+    "schemas": {
+      "Money": {"$ref": "../json-schema/common/money.v1.schema.json"},
+      "ProjectionMetadata": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sequence", "asOf", "lagMilliseconds"],
+        "properties": {
+          "sequence": {"type": "integer", "minimum": 0},
+          "asOf": {"type": "string", "format": "date-time"},
+          "lagMilliseconds": {"type": "integer", "minimum": 0}
+        }
+      },
+      "Overview": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["metadata", "serviceCounts", "paymentCounts", "volumeByRail"],
+        "properties": {
+          "metadata": {"$ref": "#/components/schemas/ProjectionMetadata"},
+          "serviceCounts": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}},
+          "paymentCounts": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}},
+          "volumeByRail": {"type": "object", "additionalProperties": {"$ref": "#/components/schemas/Money"}}
+        }
+      },
+      "Topology": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["metadata", "nodes", "edges"],
+        "properties": {
+          "metadata": {"$ref": "#/components/schemas/ProjectionMetadata"},
+          "nodes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["nodeId", "label", "kind", "status"],
+              "properties": {
+                "nodeId": {"type": "string", "pattern": "^SIM-NODE-[A-Z0-9-]{4,64}$"},
+                "label": {"type": "string", "maxLength": 64},
+                "kind": {"type": "string", "enum": ["GATEWAY", "BANK", "CORE", "CARD_PROCESSOR", "NPP", "SIMULATION", "OPERATIONS", "KAFKA", "DATABASE", "IDENTITY"]},
+                "status": {"type": "string", "enum": ["UP", "DEGRADED", "DOWN", "UNKNOWN"]}
+              }
+            }
+          },
+          "edges": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["edgeId", "sourceNodeId", "targetNodeId", "kind", "status"],
+              "properties": {
+                "edgeId": {"type": "string", "pattern": "^SIM-EDGE-[A-Z0-9-]{4,64}$"},
+                "sourceNodeId": {"type": "string", "pattern": "^SIM-NODE-[A-Z0-9-]{4,64}$"},
+                "targetNodeId": {"type": "string", "pattern": "^SIM-NODE-[A-Z0-9-]{4,64}$"},
+                "kind": {"type": "string", "enum": ["HTTP", "EVENT", "DATABASE"]},
+                "status": {"type": "string", "enum": ["UP", "DEGRADED", "DOWN", "UNKNOWN"]}
+              }
+            }
+          }
+        }
+      },
+      "Trace": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["metadata", "transactionId", "correlationId", "stages"],
+        "properties": {
+          "metadata": {"$ref": "#/components/schemas/ProjectionMetadata"},
+          "transactionId": {"type": "string", "pattern": "^SIM-(TXN|PAY|AUTH|CAP)-[A-Z0-9-]{8,64}$"},
+          "correlationId": {"type": "string", "pattern": "^SIM-CORR-[A-Z0-9-]{8,64}$"},
+          "stages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["stageId", "source", "name", "status", "occurredAt"],
+              "properties": {
+                "stageId": {"type": "string", "pattern": "^SIM-STAGE-[A-Z0-9-]{4,64}$"},
+                "source": {"type": "string", "maxLength": 64},
+                "name": {"type": "string", "maxLength": 96},
+                "status": {"type": "string", "enum": ["PENDING", "COMPLETED", "FAILED", "UNKNOWN"]},
+                "occurredAt": {"type": "string", "format": "date-time"},
+                "durationMilliseconds": {"type": ["integer", "null"], "minimum": 0}
+              }
+            }
+          }
+        }
+      },
+      "LedgerView": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["metadata", "transactionId", "journals"],
+        "properties": {
+          "metadata": {"$ref": "#/components/schemas/ProjectionMetadata"},
+          "transactionId": {"type": "string"},
+          "journals": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["journalId", "owner", "status", "postedAt", "entries", "balanced"],
+              "properties": {
+                "journalId": {"type": "string", "pattern": "^SIM-JRN-[A-Z0-9-]{8,64}$"},
+                "owner": {"type": "string", "maxLength": 64},
+                "status": {"type": "string", "const": "POSTED"},
+                "postedAt": {"type": "string", "format": "date-time"},
+                "entries": {
+                  "type": "array",
+                  "minItems": 2,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["ledgerAccount", "side", "money"],
+                    "properties": {
+                      "ledgerAccount": {"type": "string", "maxLength": 96},
+                      "side": {"type": "string", "enum": ["DEBIT", "CREDIT"]},
+                      "money": {"$ref": "#/components/schemas/Money"}
+                    }
+                  }
+                },
+                "balanced": {"type": "boolean", "const": true},
+                "reversesJournalId": {"type": ["string", "null"], "pattern": "^SIM-JRN-[A-Z0-9-]{8,64}$"}
+              }
+            }
+          }
+        }
+      },
+      "SettlementView": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["metadata", "positions"],
+        "properties": {
+          "metadata": {"$ref": "#/components/schemas/ProjectionMetadata"},
+          "positions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["participantId", "centralPosition", "bankMirror", "difference", "reconciliationStatus"],
+              "properties": {
+                "participantId": {"type": "string", "pattern": "^SIM-PTCP-(ORDA|NOMAD|TENGRI)$"},
+                "centralPosition": {"$ref": "#/components/schemas/Money"},
+                "bankMirror": {"$ref": "#/components/schemas/Money"},
+                "difference": {"$ref": "#/components/schemas/Money"},
+                "reconciliationStatus": {"type": "string", "enum": ["MATCHED", "PENDING_EVENT", "MISMATCH"]}
+              }
+            }
+          }
+        }
+      },
+      "ClearingView": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["metadata", "cycles"],
+        "properties": {
+          "metadata": {"$ref": "#/components/schemas/ProjectionMetadata"},
+          "cycles": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["cycleId", "status", "itemCount", "grossAmount", "cutoffAt"],
+              "properties": {
+                "cycleId": {"type": "string", "pattern": "^SIM-CYCLE-[A-Z0-9-]{8,64}$"},
+                "status": {"type": "string", "enum": ["OPEN", "FROZEN", "SETTLEMENT_BLOCKED", "SETTLED"]},
+                "itemCount": {"type": "integer", "minimum": 0},
+                "grossAmount": {"$ref": "#/components/schemas/Money"},
+                "cutoffAt": {"type": "string", "format": "date-time"}
+              }
+            }
+          }
+        }
+      },
+      "EventPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["metadata", "items"],
+        "properties": {
+          "metadata": {"$ref": "#/components/schemas/ProjectionMetadata"},
+          "items": {"type": "array", "items": {"$ref": "../json-schema/common/event-envelope.v1.schema.json"}},
+          "nextSequence": {"type": ["integer", "null"], "minimum": 1}
+        }
+      },
+      "KafkaView": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["metadata", "topics"],
+        "properties": {
+          "metadata": {"$ref": "#/components/schemas/ProjectionMetadata"},
+          "topics": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["topic", "messagesPerMinute", "consumerLag", "retryCount", "deadLetterCount"],
+              "properties": {
+                "topic": {"type": "string", "maxLength": 128},
+                "messagesPerMinute": {"type": "number", "minimum": 0},
+                "consumerLag": {"type": "integer", "minimum": 0},
+                "retryCount": {"type": "integer", "minimum": 0},
+                "deadLetterCount": {"type": "integer", "minimum": 0}
+              }
+            }
+          }
+        }
+      },
+      "CardOperationsView": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["metadata", "banks"],
+        "properties": {
+          "metadata": {"$ref": "#/components/schemas/ProjectionMetadata"},
+          "banks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["bankId", "authorizationCounts", "captureCounts", "activeHoldCount"],
+              "properties": {
+                "bankId": {"type": "string", "enum": ["ORDA", "NOMAD", "TENGRI"]},
+                "authorizationCounts": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}},
+                "captureCounts": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}},
+                "activeHoldCount": {"type": "integer", "minimum": 0}
+              }
+            }
+          }
+        }
+      },
+      "SimulationView": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["metadata", "simulationTime", "clockStatus", "clockRate", "runs", "activeFailureControls"],
+        "properties": {
+          "metadata": {"$ref": "#/components/schemas/ProjectionMetadata"},
+          "simulationTime": {"type": "string", "format": "date-time"},
+          "clockStatus": {"type": "string", "enum": ["RUNNING", "PAUSED"]},
+          "clockRate": {"type": "number", "minimum": 0.1},
+          "runs": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["runId", "status", "generatedCount"], "properties": {"runId": {"type": "string", "pattern": "^SIM-RUN-[A-Z0-9-]{8,64}$"}, "status": {"type": "string", "enum": ["STARTING", "RUNNING", "STOPPING", "STOPPED", "COMPLETED", "FAILED"]}, "generatedCount": {"type": "integer", "minimum": 0}}}},
+          "activeFailureControls": {"type": "integer", "minimum": 0}
+        }
+      }
+    }
+  }
+}

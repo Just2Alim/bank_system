@@ -1,0 +1,32 @@
+{
+  "examples": [
+    {
+      "document": "examples/common/domain-event.sample.json",
+      "schema": "json-schema/common/event-envelope.v1.schema.json"
+    },
+    {
+      "document": "examples/common/error.sample.json",
+      "schema": "json-schema/common/error.v1.schema.json"
+    },
+    {
+      "document": "examples/common/command-receipt.sample.json",
+      "schema": "json-schema/common/command-receipt.v1.schema.json"
+    },
+    {
+      "document": "examples/iso20022/pacs.008-rtgs.sample.json",
+      "schema": "json-schema/payments/pacs.008-simulator.v1.schema.json"
+    },
+    {
+      "document": "examples/iso20022/pacs.008-msmp.sample.json",
+      "schema": "json-schema/payments/pacs.008-simulator.v1.schema.json"
+    },
+    {
+      "document": "examples/iso20022/pacs.002-settled.sample.json",
+      "schema": "json-schema/payments/pacs.002-simulator.v1.schema.json"
+    },
+    {
+      "document": "examples/iso20022/pacs.004-return.sample.json",
+      "schema": "json-schema/payments/pacs.004-simulator.v1.schema.json"
+    }
+  ]
+}

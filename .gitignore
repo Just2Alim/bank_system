@@ -1,0 +1,32 @@
+# macOS metadata (including AppleDouble files on non-APFS volumes)
+.DS_Store
+._*
+
+# Local tool downloads and developer overrides
+.tools/
+.env
+.env.*
+!.env.example
+.idea/
+.vscode/
+
+# Java / Maven
+target/
+*.class
+*.log
+
+# Node / frontend
+node_modules/
+dist/
+coverage/
+.vite/
+playwright-report/
+test-results/
+
+# Runtime data and secrets
+data/
+volumes/
+secrets/
+*.pem
+*.key
+

@@ -1,0 +1,394 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Banking Simulator Gateway Public API",
+    "version": "1.0.0",
+    "description": "Same-origin BFF contract for authenticated simulator customers and operators. Bank and customer identity always come from the session principal."
+  },
+  "servers": [{"url": "/"}],
+  "security": [{"bffSession": []}],
+  "tags": [
+    {"name": "Accounts"},
+    {"name": "Cards"},
+    {"name": "Payments"},
+    {"name": "Transactions"}
+  ],
+  "paths": {
+    "/api/v1/me/accounts": {
+      "get": {
+        "tags": ["Accounts"],
+        "operationId": "listMyAccounts",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}],
+        "responses": {
+          "200": {
+            "description": "Accounts owned by the authenticated synthetic customer.",
+            "headers": {"X-Correlation-ID": {"$ref": "#/components/headers/CorrelationId"}},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["items"],
+                  "properties": {"items": {"type": "array", "items": {"$ref": "#/components/schemas/AccountSummary"}}}
+                }
+              }
+            }
+          },
+          "401": {"$ref": "#/components/responses/Error"}
+        }
+      }
+    },
+    "/api/v1/me/accounts/{accountId}/transactions": {
+      "get": {
+        "tags": ["Accounts"],
+        "operationId": "listMyAccountTransactions",
+        "parameters": [
+          {"$ref": "#/components/parameters/CorrelationId"},
+          {"$ref": "#/components/parameters/AccountId"},
+          {"name": "cursor", "in": "query", "schema": {"type": "string", "maxLength": 256}},
+          {"name": "limit", "in": "query", "schema": {"type": "integer", "minimum": 1, "maximum": 100, "default": 25}}
+        ],
+        "responses": {
+          "200": {
+            "description": "Cursor-paged statement projection.",
+            "headers": {"X-Correlation-ID": {"$ref": "#/components/headers/CorrelationId"}},
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/StatementPage"}}}
+          },
+          "404": {"$ref": "#/components/responses/Error"}
+        }
+      }
+    },
+    "/api/v1/me/cards": {
+      "get": {
+        "tags": ["Cards"],
+        "operationId": "listMyCards",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}],
+        "responses": {
+          "200": {
+            "description": "Tokenized simulator card references; no account number is exposed.",
+            "headers": {"X-Correlation-ID": {"$ref": "#/components/headers/CorrelationId"}},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["items"],
+                  "properties": {"items": {"type": "array", "items": {"$ref": "#/components/schemas/CardSummary"}}}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transfers/internal": {
+      "post": {
+        "tags": ["Payments"],
+        "operationId": "createInternalTransfer",
+        "parameters": [
+          {"$ref": "#/components/parameters/CorrelationId"},
+          {"$ref": "#/components/parameters/IdempotencyKey"},
+          {"$ref": "#/components/parameters/CsrfToken"}
+        ],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/InternalTransferRequest"}}}},
+        "responses": {
+          "201": {"$ref": "#/components/responses/CommandAccepted"},
+          "200": {"$ref": "#/components/responses/CommandReplay"},
+          "409": {"$ref": "#/components/responses/IdempotencyConflict"},
+          "422": {"$ref": "#/components/responses/Error"}
+        }
+      }
+    },
+    "/api/v1/transfers/interbank": {
+      "post": {
+        "tags": ["Payments"],
+        "operationId": "createInterbankTransfer",
+        "parameters": [
+          {"$ref": "#/components/parameters/CorrelationId"},
+          {"$ref": "#/components/parameters/IdempotencyKey"},
+          {"$ref": "#/components/parameters/CsrfToken"}
+        ],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/InterbankTransferRequest"}}}},
+        "responses": {
+          "202": {"$ref": "#/components/responses/CommandAccepted"},
+          "200": {"$ref": "#/components/responses/CommandReplay"},
+          "409": {"$ref": "#/components/responses/IdempotencyConflict"},
+          "422": {"$ref": "#/components/responses/Error"}
+        }
+      }
+    },
+    "/api/v1/payments/msmp": {
+      "post": {
+        "tags": ["Payments"],
+        "operationId": "createMsmpPayment",
+        "parameters": [
+          {"$ref": "#/components/parameters/CorrelationId"},
+          {"$ref": "#/components/parameters/IdempotencyKey"},
+          {"$ref": "#/components/parameters/CsrfToken"}
+        ],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AliasPaymentRequest"}}}},
+        "responses": {
+          "202": {"$ref": "#/components/responses/CommandAccepted"},
+          "200": {"$ref": "#/components/responses/CommandReplay"},
+          "409": {"$ref": "#/components/responses/IdempotencyConflict"},
+          "422": {"$ref": "#/components/responses/Error"}
+        }
+      }
+    },
+    "/api/v1/payments/qr/resolve": {
+      "post": {
+        "tags": ["Payments"],
+        "operationId": "resolveQrPayment",
+        "x-idempotency-exempt": true,
+        "parameters": [
+          {"$ref": "#/components/parameters/CorrelationId"},
+          {"$ref": "#/components/parameters/CsrfToken"}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["qrToken"],
+                "properties": {"qrToken": {"type": "string", "pattern": "^SIM-QR-[A-Z0-9-]{8,64}$"}}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Version-bound resolution token and safe display data.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AliasResolution"}}}},
+          "404": {"$ref": "#/components/responses/Error"}
+        }
+      }
+    },
+    "/api/v1/payments/qr": {
+      "post": {
+        "tags": ["Payments"],
+        "operationId": "createQrPayment",
+        "parameters": [
+          {"$ref": "#/components/parameters/CorrelationId"},
+          {"$ref": "#/components/parameters/IdempotencyKey"},
+          {"$ref": "#/components/parameters/CsrfToken"}
+        ],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AliasPaymentRequest"}}}},
+        "responses": {
+          "202": {"$ref": "#/components/responses/CommandAccepted"},
+          "200": {"$ref": "#/components/responses/CommandReplay"},
+          "409": {"$ref": "#/components/responses/IdempotencyConflict"},
+          "422": {"$ref": "#/components/responses/Error"}
+        }
+      }
+    },
+    "/api/v1/transactions/{transactionId}": {
+      "get": {
+        "tags": ["Transactions"],
+        "operationId": "getMyTransaction",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}, {"$ref": "#/components/parameters/TransactionId"}],
+        "responses": {
+          "200": {"description": "Originating-bank workflow state.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Transaction"}}}},
+          "404": {"$ref": "#/components/responses/Error"}
+        }
+      }
+    },
+    "/api/v1/transactions/{transactionId}/trace": {
+      "get": {
+        "tags": ["Transactions"],
+        "operationId": "getMyTransactionTrace",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}, {"$ref": "#/components/parameters/TransactionId"}],
+        "responses": {
+          "200": {"description": "Sanitized trace stages visible to the authenticated customer.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/TransactionTrace"}}}},
+          "404": {"$ref": "#/components/responses/Error"}
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bffSession": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "BANK_SIM_SESSION",
+        "description": "Opaque HttpOnly SameSite session cookie; tokens remain server-side."
+      }
+    },
+    "headers": {
+      "CorrelationId": {"description": "Correlation identifier used for this response and downstream work.", "schema": {"$ref": "#/components/schemas/CorrelationIdValue"}},
+      "IdempotentReplay": {"description": "True when the stored result is being replayed.", "schema": {"type": "boolean"}}
+    },
+    "parameters": {
+      "CorrelationId": {"name": "X-Correlation-ID", "in": "header", "required": false, "schema": {"$ref": "#/components/schemas/CorrelationIdValue"}},
+      "IdempotencyKey": {"name": "Idempotency-Key", "in": "header", "required": true, "schema": {"type": "string", "pattern": "^SIM-IDEM-[A-Z0-9-]{8,96}$"}},
+      "CsrfToken": {"name": "X-CSRF-Token", "in": "header", "required": true, "schema": {"type": "string", "minLength": 32, "maxLength": 256}},
+      "AccountId": {"name": "accountId", "in": "path", "required": true, "schema": {"$ref": "#/components/schemas/AccountId"}},
+      "TransactionId": {"name": "transactionId", "in": "path", "required": true, "schema": {"type": "string", "pattern": "^SIM-(TXN|PAY|AUTH|CAP)-[A-Z0-9-]{8,64}$"}}
+    },
+    "responses": {
+      "CommandAccepted": {
+        "description": "New command accepted or completed synchronously.",
+        "headers": {
+          "X-Correlation-ID": {"$ref": "#/components/headers/CorrelationId"},
+          "Idempotent-Replay": {"$ref": "#/components/headers/IdempotentReplay"}
+        },
+        "content": {"application/json": {"schema": {"$ref": "../json-schema/common/command-receipt.v1.schema.json"}}}
+      },
+      "CommandReplay": {
+        "description": "Previously recorded response for the same key and request hash.",
+        "headers": {
+          "X-Correlation-ID": {"$ref": "#/components/headers/CorrelationId"},
+          "Idempotent-Replay": {"$ref": "#/components/headers/IdempotentReplay"}
+        },
+        "content": {"application/json": {"schema": {"$ref": "../json-schema/common/command-receipt.v1.schema.json"}}}
+      },
+      "Error": {"description": "Safe error response.", "content": {"application/json": {"schema": {"$ref": "../json-schema/common/error.v1.schema.json"}}}},
+      "IdempotencyConflict": {"description": "The key already exists with a different canonical request hash.", "content": {"application/json": {"schema": {"$ref": "../json-schema/common/error.v1.schema.json"}}}}
+    },
+    "schemas": {
+      "CorrelationIdValue": {"type": "string", "pattern": "^SIM-CORR-[A-Z0-9-]{8,64}$"},
+      "AccountId": {"type": "string", "pattern": "^SIM-(ORDA|NOMAD|TENGRI)-ACC-[A-Z0-9-]{4,48}$"},
+      "Money": {"$ref": "../json-schema/common/money.v1.schema.json"},
+      "AccountSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["accountId", "bankId", "product", "status", "bookBalance", "availableBalance", "version", "asOf"],
+        "properties": {
+          "accountId": {"$ref": "#/components/schemas/AccountId"},
+          "bankId": {"type": "string", "enum": ["ORDA", "NOMAD", "TENGRI"]},
+          "product": {"type": "string", "enum": ["CURRENT", "SAVINGS"]},
+          "status": {"type": "string", "enum": ["PENDING", "ACTIVE", "FROZEN", "CLOSING", "CLOSED", "REJECTED"]},
+          "bookBalance": {"$ref": "#/components/schemas/Money"},
+          "availableBalance": {"$ref": "#/components/schemas/Money"},
+          "version": {"type": "integer", "minimum": 1},
+          "asOf": {"type": "string", "format": "date-time"}
+        }
+      },
+      "StatementItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["transactionId", "postedAt", "direction", "amount", "description"],
+        "properties": {
+          "transactionId": {"type": "string", "pattern": "^SIM-(TXN|PAY|AUTH|CAP)-[A-Z0-9-]{8,64}$"},
+          "postedAt": {"type": "string", "format": "date-time"},
+          "direction": {"type": "string", "enum": ["DEBIT", "CREDIT"]},
+          "amount": {"$ref": "#/components/schemas/Money"},
+          "rail": {"type": "string", "enum": ["INTERNAL", "RTGS", "MSMP", "CLEARING", "QR", "CARD", "ATM"]},
+          "description": {"type": "string", "maxLength": 140}
+        }
+      },
+      "StatementPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["items"],
+        "properties": {
+          "items": {"type": "array", "items": {"$ref": "#/components/schemas/StatementItem"}},
+          "nextCursor": {"type": ["string", "null"], "maxLength": 256}
+        }
+      },
+      "CardSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["cardId", "linkedAccountId", "productLabel", "displayLabel", "status"],
+        "properties": {
+          "cardId": {"type": "string", "pattern": "^SIM-CARD-(ORDA|NOMAD|TENGRI)-[A-Z0-9-]{4,48}$"},
+          "linkedAccountId": {"$ref": "#/components/schemas/AccountId"},
+          "productLabel": {"type": "string", "maxLength": 64},
+          "displayLabel": {"type": "string", "maxLength": 64, "examples": ["SIM CARD - DEMO ALPHA"]},
+          "status": {"type": "string", "enum": ["INACTIVE", "ACTIVE", "SUSPENDED", "CLOSED"]}
+        }
+      },
+      "InternalTransferRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sourceAccountId", "destinationAccountId", "money"],
+        "properties": {
+          "sourceAccountId": {"$ref": "#/components/schemas/AccountId"},
+          "destinationAccountId": {"$ref": "#/components/schemas/AccountId"},
+          "money": {"$ref": "#/components/schemas/Money"},
+          "memo": {"type": "string", "maxLength": 140}
+        }
+      },
+      "InterbankTransferRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sourceAccountId", "beneficiary", "money", "railPreference"],
+        "properties": {
+          "sourceAccountId": {"$ref": "#/components/schemas/AccountId"},
+          "beneficiary": {"$ref": "#/components/schemas/Beneficiary"},
+          "money": {"$ref": "#/components/schemas/Money"},
+          "railPreference": {"type": "string", "enum": ["AUTO", "RTGS", "CLEARING"]},
+          "memo": {"type": "string", "maxLength": 140}
+        }
+      },
+      "Beneficiary": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["participantId", "accountId"],
+        "properties": {
+          "participantId": {"type": "string", "pattern": "^SIM-PTCP-(ORDA|NOMAD|TENGRI)$"},
+          "accountId": {"$ref": "#/components/schemas/AccountId"},
+          "displayName": {"type": "string", "maxLength": 96}
+        }
+      },
+      "AliasResolution": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["resolutionToken", "participantId", "beneficiaryDisplayName", "expiresAt"],
+        "properties": {
+          "resolutionToken": {"type": "string", "pattern": "^SIM-RESOLVE-[A-Z0-9-]{8,64}$"},
+          "participantId": {"type": "string", "pattern": "^SIM-PTCP-(ORDA|NOMAD|TENGRI)$"},
+          "beneficiaryDisplayName": {"type": "string", "maxLength": 96},
+          "suggestedAmount": {"$ref": "#/components/schemas/Money"},
+          "expiresAt": {"type": "string", "format": "date-time"}
+        }
+      },
+      "AliasPaymentRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sourceAccountId", "resolutionToken", "money"],
+        "properties": {
+          "sourceAccountId": {"$ref": "#/components/schemas/AccountId"},
+          "resolutionToken": {"type": "string", "pattern": "^SIM-RESOLVE-[A-Z0-9-]{8,64}$"},
+          "money": {"$ref": "#/components/schemas/Money"},
+          "memo": {"type": "string", "maxLength": 140}
+        }
+      },
+      "Transaction": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["transactionId", "kind", "status", "money", "createdAt", "updatedAt"],
+        "properties": {
+          "transactionId": {"type": "string", "pattern": "^SIM-(TXN|PAY|AUTH|CAP)-[A-Z0-9-]{8,64}$"},
+          "kind": {"type": "string", "enum": ["INTERNAL_TRANSFER", "INTERBANK_PAYMENT", "MSMP_PAYMENT", "QR_PAYMENT", "CARD_PURCHASE", "ATM_WITHDRAWAL"]},
+          "status": {"type": "string", "enum": ["RECEIVED", "FUNDS_RESERVED", "FUNDED", "SUBMITTED", "QUEUED", "SETTLED", "BENEFICIARY_CONFIRMED", "COMPLETED", "REJECTED", "RETURNED", "UNKNOWN"]},
+          "money": {"$ref": "#/components/schemas/Money"},
+          "createdAt": {"type": "string", "format": "date-time"},
+          "updatedAt": {"type": "string", "format": "date-time"}
+        }
+      },
+      "TransactionTrace": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["transactionId", "stages", "projectionAsOf"],
+        "properties": {
+          "transactionId": {"type": "string", "pattern": "^SIM-(TXN|PAY|AUTH|CAP)-[A-Z0-9-]{8,64}$"},
+          "stages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["stage", "status", "occurredAt", "source"],
+              "properties": {
+                "stage": {"type": "string", "maxLength": 64},
+                "status": {"type": "string", "enum": ["PENDING", "COMPLETED", "FAILED", "UNKNOWN"]},
+                "occurredAt": {"type": "string", "format": "date-time"},
+                "source": {"type": "string", "maxLength": 64}
+              }
+            }
+          },
+          "projectionAsOf": {"type": "string", "format": "date-time"}
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bank-simulator.local/contracts/common/operation-stream-event.v1.schema.json",
+  "title": "OperationStreamEventV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["sequence", "eventType", "occurredAt", "payload"],
+  "properties": {
+    "sequence": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "eventType": {
+      "type": "string",
+      "enum": ["projection-updated", "transaction-stage", "topology-health", "reset-required", "heartbeat"]
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "correlationId": {
+      "type": ["string", "null"],
+      "pattern": "^SIM-CORR-[A-Z0-9-]{8,64}$"
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

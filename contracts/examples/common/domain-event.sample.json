@@ -1,0 +1,25 @@
+{
+  "eventId": "SIM-EVT-NPP-20260904-0001",
+  "eventType": "npp.payment.settled",
+  "schemaVersion": 1,
+  "occurredAt": "2026-09-04T09:15:01Z",
+  "simulationTime": "2026-09-04T12:15:01+03:00",
+  "producer": "national-payment-platform",
+  "bankId": "ORDA",
+  "participantId": "SIM-PTCP-ORDA",
+  "aggregateId": "SIM-PAY-RTGS-20260904-0001",
+  "aggregateVersion": 3,
+  "correlationId": "SIM-CORR-DEMO-20260904-0001",
+  "causationId": "SIM-CMD-NPP-20260904-0001",
+  "traceparent": "00-11111111111111111111111111111111-2222222222222222-01",
+  "dataClassification": "SYNTHETIC_FINANCIAL",
+  "payload": {
+    "paymentId": "SIM-PAY-RTGS-20260904-0001",
+    "status": "SETTLED",
+    "rail": "RTGS",
+    "amount": {
+      "amount": "125000.00",
+      "currency": "KZT"
+    }
+  }
+}

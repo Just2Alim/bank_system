@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bank-simulator.local/contracts/common/event-envelope.v1.schema.json",
+  "title": "DomainEventEnvelopeV1",
+  "description": "Versioned, sanitized event transport envelope. Payloads carry simulator identifiers only.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eventId",
+    "eventType",
+    "schemaVersion",
+    "occurredAt",
+    "producer",
+    "aggregateId",
+    "aggregateVersion",
+    "correlationId",
+    "traceparent",
+    "dataClassification",
+    "payload"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "pattern": "^SIM-EVT-[A-Z0-9-]{8,64}$"
+    },
+    "eventType": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_.-]{2,127}$"
+    },
+    "schemaVersion": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "simulationTime": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "producer": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{2,63}$"
+    },
+    "bankId": {
+      "type": "string",
+      "enum": ["ORDA", "NOMAD", "TENGRI"]
+    },
+    "participantId": {
+      "type": "string",
+      "pattern": "^SIM-PTCP-(ORDA|NOMAD|TENGRI)$"
+    },
+    "aggregateId": {
+      "type": "string",
+      "pattern": "^SIM-[A-Z]+-[A-Z0-9-]{4,80}$"
+    },
+    "aggregateVersion": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "correlationId": {
+      "type": "string",
+      "pattern": "^SIM-CORR-[A-Z0-9-]{8,64}$"
+    },
+    "causationId": {
+      "type": ["string", "null"],
+      "pattern": "^SIM-(CMD|EVT)-[A-Z0-9-]{8,64}$"
+    },
+    "traceparent": {
+      "type": "string",
+      "pattern": "^00-[0-9a-f]{32}-[0-9a-f]{16}-0[01]$"
+    },
+    "dataClassification": {
+      "type": "string",
+      "enum": ["SYNTHETIC_OPERATIONS", "SYNTHETIC_FINANCIAL", "INTERNAL_TELEMETRY"]
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

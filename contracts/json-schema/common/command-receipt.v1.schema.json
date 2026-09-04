@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bank-simulator.local/contracts/common/command-receipt.v1.schema.json",
+  "title": "CommandReceiptV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["commandId", "resourceId", "status", "duplicate", "receivedAt"],
+  "properties": {
+    "commandId": {
+      "type": "string",
+      "pattern": "^SIM-CMD-[A-Z0-9-]{8,64}$"
+    },
+    "resourceId": {
+      "type": "string",
+      "pattern": "^SIM-[A-Z]+-[A-Z0-9-]{4,80}$"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["ACCEPTED", "PROCESSING", "COMPLETED", "REJECTED", "UNKNOWN"]
+    },
+    "duplicate": {
+      "type": "boolean"
+    },
+    "receivedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "links": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "format": "uri-reference"
+      }
+    }
+  }
+}

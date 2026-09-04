@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bank-simulator.local/contracts/payments/pacs.004-simulator.v1.schema.json",
+  "title": "SimulatorPacs004V1",
+  "description": "A reduced JSON return message inspired by pacs.004.001.15. A return is always a new payment and never mutates final settlement.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "messageType",
+    "businessMessageId",
+    "creationDateTime",
+    "originalPaymentId",
+    "returnInstructionId",
+    "returnedAmount",
+    "returningParticipantId",
+    "receivingParticipantId",
+    "reasonCode"
+  ],
+  "properties": {
+    "messageType": {"const": "pacs.004.001.15"},
+    "businessMessageId": {
+      "type": "string",
+      "pattern": "^SIM-MSG-[A-Z0-9-]{8,64}$"
+    },
+    "creationDateTime": {"type": "string", "format": "date-time"},
+    "originalPaymentId": {
+      "type": "string",
+      "pattern": "^SIM-PAY-[A-Z0-9-]{8,64}$"
+    },
+    "returnInstructionId": {
+      "type": "string",
+      "pattern": "^SIM-RETURN-[A-Z0-9-]{8,64}$"
+    },
+    "returnedAmount": {
+      "$ref": "../common/money.v1.schema.json"
+    },
+    "returningParticipantId": {
+      "type": "string",
+      "pattern": "^SIM-PTCP-(ORDA|NOMAD|TENGRI)$"
+    },
+    "receivingParticipantId": {
+      "type": "string",
+      "pattern": "^SIM-PTCP-(ORDA|NOMAD|TENGRI)$"
+    },
+    "reasonCode": {
+      "type": "string",
+      "enum": ["BENEFICIARY_ACCOUNT_CLOSED", "BENEFICIARY_ACCOUNT_INVALID", "CUSTOMER_REQUEST", "DUPLICATE_PAYMENT"]
+    },
+    "additionalInformation": {
+      "type": "string",
+      "maxLength": 256
+    }
+  }
+}

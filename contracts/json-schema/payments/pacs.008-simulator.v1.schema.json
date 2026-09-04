@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bank-simulator.local/contracts/payments/pacs.008-simulator.v1.schema.json",
+  "title": "SimulatorPacs008V1",
+  "description": "A deliberately reduced JSON representation inspired by pacs.008.001.14. It is not a certified ISO 20022 document.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "messageType",
+    "businessMessageId",
+    "creationDateTime",
+    "instructionId",
+    "endToEndId",
+    "rail",
+    "instructedAmount",
+    "debtorParticipantId",
+    "debtorAccountId",
+    "creditorParticipantId",
+    "creditorAccountId"
+  ],
+  "properties": {
+    "messageType": {"const": "pacs.008.001.14"},
+    "businessMessageId": {
+      "type": "string",
+      "pattern": "^SIM-MSG-[A-Z0-9-]{8,64}$"
+    },
+    "creationDateTime": {"type": "string", "format": "date-time"},
+    "instructionId": {
+      "type": "string",
+      "pattern": "^SIM-INSTR-[A-Z0-9-]{8,64}$"
+    },
+    "endToEndId": {
+      "type": "string",
+      "pattern": "^SIM-E2E-[A-Z0-9-]{8,64}$"
+    },
+    "rail": {
+      "type": "string",
+      "enum": ["RTGS", "MSMP", "CLEARING"]
+    },
+    "instructedAmount": {
+      "$ref": "../common/money.v1.schema.json"
+    },
+    "debtorParticipantId": {
+      "type": "string",
+      "pattern": "^SIM-PTCP-(ORDA|NOMAD|TENGRI)$"
+    },
+    "debtorAccountId": {
+      "type": "string",
+      "pattern": "^SIM-(ORDA|NOMAD|TENGRI)-ACC-[A-Z0-9-]{4,48}$"
+    },
+    "creditorParticipantId": {
+      "type": "string",
+      "pattern": "^SIM-PTCP-(ORDA|NOMAD|TENGRI)$"
+    },
+    "creditorAccountId": {
+      "type": "string",
+      "pattern": "^SIM-(ORDA|NOMAD|TENGRI)-ACC-[A-Z0-9-]{4,48}$"
+    },
+    "aliasResolutionToken": {
+      "type": "string",
+      "pattern": "^SIM-RESOLVE-[A-Z0-9-]{8,64}$"
+    },
+    "remittanceInformation": {
+      "type": "string",
+      "maxLength": 140
+    }
+  }
+}

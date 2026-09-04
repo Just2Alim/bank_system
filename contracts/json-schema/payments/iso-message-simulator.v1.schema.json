@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bank-simulator.local/contracts/payments/iso-message-simulator.v1.schema.json",
+  "title": "SimulatorIsoMessageV1",
+  "description": "Union of the small ISO-like message subset supported by the simulator.",
+  "oneOf": [
+    {"$ref": "pacs.008-simulator.v1.schema.json"},
+    {"$ref": "pacs.002-simulator.v1.schema.json"},
+    {"$ref": "pacs.004-simulator.v1.schema.json"}
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "messageType": "pacs.008.001.14",
+  "businessMessageId": "SIM-MSG-TENGRI-20260904-0002",
+  "creationDateTime": "2026-09-04T09:16:00Z",
+  "instructionId": "SIM-INSTR-TENGRI-20260904-0002",
+  "endToEndId": "SIM-E2E-DEMO-20260904-0002",
+  "rail": "MSMP",
+  "instructedAmount": {
+    "amount": "7450.00",
+    "currency": "KZT"
+  },
+  "debtorParticipantId": "SIM-PTCP-TENGRI",
+  "debtorAccountId": "SIM-TENGRI-ACC-DEMO0007",
+  "creditorParticipantId": "SIM-PTCP-NOMAD",
+  "creditorAccountId": "SIM-NOMAD-ACC-DEMO0019",
+  "aliasResolutionToken": "SIM-RESOLVE-NOMAD-DEMO-0042",
+  "remittanceInformation": "Synthetic shared lunch"
+}

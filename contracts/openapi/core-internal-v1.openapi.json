@@ -1,0 +1,349 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Core Banking Port Internal API",
+    "version": "1.0.0",
+    "description": "Intent-specific financial core commands. Used over HTTP by Orda and as the semantic contract for the in-process Nomad and Tengri adapters. No generic ledger-posting endpoint exists."
+  },
+  "servers": [{"url": "http://legacy-core-simulator:8080"}],
+  "security": [{"serviceJwt": []}],
+  "paths": {
+    "/internal/v1/accounts/{accountId}": {
+      "get": {
+        "operationId": "getCoreAccount",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}, {"$ref": "#/components/parameters/AccountId"}],
+        "responses": {
+          "200": {"description": "Authoritative account balance view.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CoreAccount"}}}},
+          "404": {"$ref": "#/components/responses/Error"}
+        }
+      }
+    },
+    "/internal/v1/commands/{commandId}": {
+      "get": {
+        "operationId": "getCoreCommandOutcome",
+        "description": "Resolve an ambiguous timeout using the exact original command identifier.",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}, {"$ref": "#/components/parameters/CommandId"}],
+        "responses": {
+          "200": {"description": "Recorded command outcome.", "content": {"application/json": {"schema": {"$ref": "../json-schema/common/command-receipt.v1.schema.json"}}}},
+          "404": {"$ref": "#/components/responses/Error"}
+        }
+      }
+    },
+    "/internal/v1/holds": {
+      "post": {
+        "operationId": "reserveCoreFunds",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}, {"$ref": "#/components/parameters/IdempotencyKey"}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ReserveFundsCommand"}}}},
+        "responses": {"201": {"$ref": "#/components/responses/CommandResult"}, "200": {"$ref": "#/components/responses/CommandResult"}, "409": {"$ref": "#/components/responses/Error"}, "422": {"$ref": "#/components/responses/Error"}}
+      }
+    },
+    "/internal/v1/holds/{holdId}/release": {
+      "post": {
+        "operationId": "releaseCoreHold",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}, {"$ref": "#/components/parameters/IdempotencyKey"}, {"$ref": "#/components/parameters/HoldId"}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ReleaseHoldCommand"}}}},
+        "responses": {"200": {"$ref": "#/components/responses/CommandResult"}, "409": {"$ref": "#/components/responses/Error"}, "422": {"$ref": "#/components/responses/Error"}}
+      }
+    },
+    "/internal/v1/transfers/internal": {
+      "post": {
+        "operationId": "postCoreInternalTransfer",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}, {"$ref": "#/components/parameters/IdempotencyKey"}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/InternalTransferCommand"}}}},
+        "responses": {"201": {"$ref": "#/components/responses/CommandResult"}, "200": {"$ref": "#/components/responses/CommandResult"}, "409": {"$ref": "#/components/responses/Error"}, "422": {"$ref": "#/components/responses/Error"}}
+      }
+    },
+    "/internal/v1/payments/outbound/fund": {
+      "post": {
+        "operationId": "fundCoreOutboundPayment",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}, {"$ref": "#/components/parameters/IdempotencyKey"}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/FundOutboundPaymentCommand"}}}},
+        "responses": {"201": {"$ref": "#/components/responses/CommandResult"}, "200": {"$ref": "#/components/responses/CommandResult"}, "409": {"$ref": "#/components/responses/Error"}, "422": {"$ref": "#/components/responses/Error"}}
+      }
+    },
+    "/internal/v1/payments/outbound/settle": {
+      "post": {
+        "operationId": "settleCoreOutboundPayment",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}, {"$ref": "#/components/parameters/IdempotencyKey"}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/SettleOutboundPaymentCommand"}}}},
+        "responses": {"200": {"$ref": "#/components/responses/CommandResult"}, "409": {"$ref": "#/components/responses/Error"}, "422": {"$ref": "#/components/responses/Error"}}
+      }
+    },
+    "/internal/v1/payments/outbound/refund": {
+      "post": {
+        "operationId": "refundCoreUnsettledPayment",
+        "description": "Allowed only after definitive proof that central settlement did not occur.",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}, {"$ref": "#/components/parameters/IdempotencyKey"}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/RefundOutboundPaymentCommand"}}}},
+        "responses": {"200": {"$ref": "#/components/responses/CommandResult"}, "409": {"$ref": "#/components/responses/Error"}, "422": {"$ref": "#/components/responses/Error"}}
+      }
+    },
+    "/internal/v1/payments/inbound/recognize": {
+      "post": {
+        "operationId": "recognizeCoreInboundSettlement",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}, {"$ref": "#/components/parameters/IdempotencyKey"}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/RecognizeInboundSettlementCommand"}}}},
+        "responses": {"201": {"$ref": "#/components/responses/CommandResult"}, "200": {"$ref": "#/components/responses/CommandResult"}, "409": {"$ref": "#/components/responses/Error"}, "422": {"$ref": "#/components/responses/Error"}}
+      }
+    },
+    "/internal/v1/payments/inbound/credit": {
+      "post": {
+        "operationId": "creditCoreInboundBeneficiary",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}, {"$ref": "#/components/parameters/IdempotencyKey"}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CreditInboundBeneficiaryCommand"}}}},
+        "responses": {"200": {"$ref": "#/components/responses/CommandResult"}, "409": {"$ref": "#/components/responses/Error"}, "422": {"$ref": "#/components/responses/Error"}}
+      }
+    },
+    "/internal/v1/cards/captures": {
+      "post": {
+        "operationId": "captureCoreCardAuthorization",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}, {"$ref": "#/components/parameters/IdempotencyKey"}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CaptureCardCommand"}}}},
+        "responses": {"201": {"$ref": "#/components/responses/CommandResult"}, "200": {"$ref": "#/components/responses/CommandResult"}, "409": {"$ref": "#/components/responses/Error"}, "422": {"$ref": "#/components/responses/Error"}}
+      }
+    },
+    "/internal/v1/cards/captures/{captureId}/reverse": {
+      "post": {
+        "operationId": "reverseCoreCardCapture",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}, {"$ref": "#/components/parameters/IdempotencyKey"}, {"$ref": "#/components/parameters/CaptureId"}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ReverseCaptureCommand"}}}},
+        "responses": {"200": {"$ref": "#/components/responses/CommandResult"}, "409": {"$ref": "#/components/responses/Error"}, "422": {"$ref": "#/components/responses/Error"}}
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {"serviceJwt": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"}},
+    "parameters": {
+      "CorrelationId": {"name": "X-Correlation-ID", "in": "header", "required": true, "schema": {"$ref": "#/components/schemas/CorrelationId"}},
+      "IdempotencyKey": {"name": "Idempotency-Key", "in": "header", "required": true, "schema": {"type": "string", "pattern": "^SIM-IDEM-[A-Z0-9-]{8,96}$"}},
+      "AccountId": {"name": "accountId", "in": "path", "required": true, "schema": {"$ref": "#/components/schemas/AccountId"}},
+      "CommandId": {"name": "commandId", "in": "path", "required": true, "schema": {"$ref": "#/components/schemas/CommandId"}},
+      "HoldId": {"name": "holdId", "in": "path", "required": true, "schema": {"type": "string", "pattern": "^SIM-HOLD-[A-Z0-9-]{8,64}$"}},
+      "CaptureId": {"name": "captureId", "in": "path", "required": true, "schema": {"type": "string", "pattern": "^SIM-CAP-[A-Z0-9-]{8,64}$"}}
+    },
+    "responses": {
+      "CommandResult": {
+        "description": "Idempotent financial command outcome.",
+        "headers": {
+          "X-Correlation-ID": {"schema": {"$ref": "#/components/schemas/CorrelationId"}},
+          "Idempotent-Replay": {"schema": {"type": "boolean"}}
+        },
+        "content": {"application/json": {"schema": {"$ref": "../json-schema/common/command-receipt.v1.schema.json"}}}
+      },
+      "Error": {"description": "Safe error response.", "content": {"application/json": {"schema": {"$ref": "../json-schema/common/error.v1.schema.json"}}}}
+    },
+    "schemas": {
+      "CorrelationId": {"type": "string", "pattern": "^SIM-CORR-[A-Z0-9-]{8,64}$"},
+      "CommandId": {"type": "string", "pattern": "^SIM-CMD-[A-Z0-9-]{8,64}$"},
+      "AccountId": {"type": "string", "pattern": "^SIM-(ORDA|NOMAD|TENGRI)-ACC-[A-Z0-9-]{4,48}$"},
+      "PaymentId": {"type": "string", "pattern": "^SIM-PAY-[A-Z0-9-]{8,64}$"},
+      "Money": {"$ref": "../json-schema/common/money.v1.schema.json"},
+      "CommandBase": {
+        "type": "object",
+        "required": ["commandId", "sourceReference"],
+        "properties": {
+          "commandId": {"$ref": "#/components/schemas/CommandId"},
+          "sourceReference": {"type": "string", "pattern": "^SIM-[A-Z]+-[A-Z0-9-]{4,80}$"},
+          "causationId": {"type": ["string", "null"], "pattern": "^SIM-(CMD|EVT)-[A-Z0-9-]{8,64}$"}
+        }
+      },
+      "CoreAccount": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["accountId", "status", "bookBalance", "availableBalance", "activeHoldTotal", "version", "asOf"],
+        "properties": {
+          "accountId": {"$ref": "#/components/schemas/AccountId"},
+          "status": {"type": "string", "enum": ["PENDING", "ACTIVE", "FROZEN", "CLOSING", "CLOSED", "REJECTED"]},
+          "bookBalance": {"$ref": "#/components/schemas/Money"},
+          "availableBalance": {"$ref": "#/components/schemas/Money"},
+          "activeHoldTotal": {"$ref": "#/components/schemas/Money"},
+          "version": {"type": "integer", "minimum": 1},
+          "asOf": {"type": "string", "format": "date-time"}
+        }
+      },
+      "ReserveFundsCommand": {
+        "allOf": [
+          {"$ref": "#/components/schemas/CommandBase"},
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["commandId", "sourceReference", "accountId", "money", "purpose", "expiresAt"],
+            "properties": {
+              "commandId": {"$ref": "#/components/schemas/CommandId"},
+              "sourceReference": {"type": "string", "pattern": "^SIM-[A-Z]+-[A-Z0-9-]{4,80}$"},
+              "causationId": {"type": ["string", "null"], "pattern": "^SIM-(CMD|EVT)-[A-Z0-9-]{8,64}$"},
+              "accountId": {"$ref": "#/components/schemas/AccountId"},
+              "money": {"$ref": "#/components/schemas/Money"},
+              "purpose": {"type": "string", "enum": ["TRANSFER", "CARD_PURCHASE", "ATM_WITHDRAWAL"]},
+              "expiresAt": {"type": "string", "format": "date-time"}
+            }
+          }
+        ]
+      },
+      "ReleaseHoldCommand": {
+        "allOf": [
+          {"$ref": "#/components/schemas/CommandBase"},
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["commandId", "sourceReference", "reason"],
+            "properties": {
+              "commandId": {"$ref": "#/components/schemas/CommandId"},
+              "sourceReference": {"type": "string", "pattern": "^SIM-[A-Z]+-[A-Z0-9-]{4,80}$"},
+              "causationId": {"type": ["string", "null"], "pattern": "^SIM-(CMD|EVT)-[A-Z0-9-]{8,64}$"},
+              "reason": {"type": "string", "enum": ["CUSTOMER_CANCELLED", "AUTHORIZATION_REVERSED", "AUTHORIZATION_EXPIRED", "PAYMENT_REJECTED"]}
+            }
+          }
+        ]
+      },
+      "InternalTransferCommand": {
+        "allOf": [
+          {"$ref": "#/components/schemas/CommandBase"},
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["commandId", "sourceReference", "sourceAccountId", "destinationAccountId", "money", "fee"],
+            "properties": {
+              "commandId": {"$ref": "#/components/schemas/CommandId"},
+              "sourceReference": {"type": "string", "pattern": "^SIM-[A-Z]+-[A-Z0-9-]{4,80}$"},
+              "causationId": {"type": ["string", "null"], "pattern": "^SIM-(CMD|EVT)-[A-Z0-9-]{8,64}$"},
+              "sourceAccountId": {"$ref": "#/components/schemas/AccountId"},
+              "destinationAccountId": {"$ref": "#/components/schemas/AccountId"},
+              "money": {"$ref": "#/components/schemas/Money"},
+              "fee": {"$ref": "#/components/schemas/Money"}
+            }
+          }
+        ]
+      },
+      "FundOutboundPaymentCommand": {
+        "allOf": [
+          {"$ref": "#/components/schemas/CommandBase"},
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["commandId", "sourceReference", "paymentId", "holdId", "accountId", "rail", "money", "fee"],
+            "properties": {
+              "commandId": {"$ref": "#/components/schemas/CommandId"},
+              "sourceReference": {"type": "string", "pattern": "^SIM-[A-Z]+-[A-Z0-9-]{4,80}$"},
+              "causationId": {"type": ["string", "null"], "pattern": "^SIM-(CMD|EVT)-[A-Z0-9-]{8,64}$"},
+              "paymentId": {"$ref": "#/components/schemas/PaymentId"},
+              "holdId": {"type": "string", "pattern": "^SIM-HOLD-[A-Z0-9-]{8,64}$"},
+              "accountId": {"$ref": "#/components/schemas/AccountId"},
+              "rail": {"type": "string", "enum": ["RTGS", "MSMP", "CLEARING"]},
+              "money": {"$ref": "#/components/schemas/Money"},
+              "fee": {"$ref": "#/components/schemas/Money"}
+            }
+          }
+        ]
+      },
+      "SettleOutboundPaymentCommand": {
+        "allOf": [
+          {"$ref": "#/components/schemas/CommandBase"},
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["commandId", "sourceReference", "paymentId", "settlementReference", "money"],
+            "properties": {
+              "commandId": {"$ref": "#/components/schemas/CommandId"},
+              "sourceReference": {"type": "string", "pattern": "^SIM-[A-Z]+-[A-Z0-9-]{4,80}$"},
+              "causationId": {"type": ["string", "null"], "pattern": "^SIM-(CMD|EVT)-[A-Z0-9-]{8,64}$"},
+              "paymentId": {"$ref": "#/components/schemas/PaymentId"},
+              "settlementReference": {"type": "string", "pattern": "^SIM-SETTLE-[A-Z0-9-]{8,64}$"},
+              "money": {"$ref": "#/components/schemas/Money"}
+            }
+          }
+        ]
+      },
+      "RefundOutboundPaymentCommand": {
+        "allOf": [
+          {"$ref": "#/components/schemas/CommandBase"},
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["commandId", "sourceReference", "paymentId", "definitiveNonSettlementReference", "reason", "money"],
+            "properties": {
+              "commandId": {"$ref": "#/components/schemas/CommandId"},
+              "sourceReference": {"type": "string", "pattern": "^SIM-[A-Z]+-[A-Z0-9-]{4,80}$"},
+              "causationId": {"type": ["string", "null"], "pattern": "^SIM-(CMD|EVT)-[A-Z0-9-]{8,64}$"},
+              "paymentId": {"$ref": "#/components/schemas/PaymentId"},
+              "definitiveNonSettlementReference": {"type": "string", "pattern": "^SIM-NONSETTLE-[A-Z0-9-]{8,64}$"},
+              "reason": {"type": "string", "enum": ["NPP_REJECTED", "NPP_EXPIRED", "NPP_CANCELLED"]},
+              "money": {"$ref": "#/components/schemas/Money"}
+            }
+          }
+        ]
+      },
+      "RecognizeInboundSettlementCommand": {
+        "allOf": [
+          {"$ref": "#/components/schemas/CommandBase"},
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["commandId", "sourceReference", "paymentId", "settlementReference", "money"],
+            "properties": {
+              "commandId": {"$ref": "#/components/schemas/CommandId"},
+              "sourceReference": {"type": "string", "pattern": "^SIM-[A-Z]+-[A-Z0-9-]{4,80}$"},
+              "causationId": {"type": ["string", "null"], "pattern": "^SIM-(CMD|EVT)-[A-Z0-9-]{8,64}$"},
+              "paymentId": {"$ref": "#/components/schemas/PaymentId"},
+              "settlementReference": {"type": "string", "pattern": "^SIM-SETTLE-[A-Z0-9-]{8,64}$"},
+              "money": {"$ref": "#/components/schemas/Money"}
+            }
+          }
+        ]
+      },
+      "CreditInboundBeneficiaryCommand": {
+        "allOf": [
+          {"$ref": "#/components/schemas/CommandBase"},
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["commandId", "sourceReference", "paymentId", "accountId", "money"],
+            "properties": {
+              "commandId": {"$ref": "#/components/schemas/CommandId"},
+              "sourceReference": {"type": "string", "pattern": "^SIM-[A-Z]+-[A-Z0-9-]{4,80}$"},
+              "causationId": {"type": ["string", "null"], "pattern": "^SIM-(CMD|EVT)-[A-Z0-9-]{8,64}$"},
+              "paymentId": {"$ref": "#/components/schemas/PaymentId"},
+              "accountId": {"$ref": "#/components/schemas/AccountId"},
+              "money": {"$ref": "#/components/schemas/Money"}
+            }
+          }
+        ]
+      },
+      "CaptureCardCommand": {
+        "allOf": [
+          {"$ref": "#/components/schemas/CommandBase"},
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["commandId", "sourceReference", "authorizationId", "holdId", "merchantReference", "money"],
+            "properties": {
+              "commandId": {"$ref": "#/components/schemas/CommandId"},
+              "sourceReference": {"type": "string", "pattern": "^SIM-[A-Z]+-[A-Z0-9-]{4,80}$"},
+              "causationId": {"type": ["string", "null"], "pattern": "^SIM-(CMD|EVT)-[A-Z0-9-]{8,64}$"},
+              "authorizationId": {"type": "string", "pattern": "^SIM-AUTH-[A-Z0-9-]{8,64}$"},
+              "holdId": {"type": "string", "pattern": "^SIM-HOLD-[A-Z0-9-]{8,64}$"},
+              "merchantReference": {"type": "string", "pattern": "^SIM-MERCHANT-[A-Z0-9-]{4,64}$"},
+              "money": {"$ref": "#/components/schemas/Money"}
+            }
+          }
+        ]
+      },
+      "ReverseCaptureCommand": {
+        "allOf": [
+          {"$ref": "#/components/schemas/CommandBase"},
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["commandId", "sourceReference", "reason"],
+            "properties": {
+              "commandId": {"$ref": "#/components/schemas/CommandId"},
+              "sourceReference": {"type": "string", "pattern": "^SIM-[A-Z]+-[A-Z0-9-]{4,80}$"},
+              "causationId": {"type": ["string", "null"], "pattern": "^SIM-(CMD|EVT)-[A-Z0-9-]{8,64}$"},
+              "reason": {"type": "string", "enum": ["CAPTURE_ERROR", "MERCHANT_CANCELLED", "DUPLICATE_CAPTURE"]}
+            }
+          }
+        ]
+      }
+    }
+  }
+}

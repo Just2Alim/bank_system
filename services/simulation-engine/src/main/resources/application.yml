@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: simulation-engine
+  datasource:
+    url: ${SIMULATION_DB_URL:jdbc:postgresql://localhost:5432/simulation}
+    username: ${SIMULATION_DB_USER:simulation_app}
+    password: ${SIMULATION_DB_PASSWORD}
+  flyway:
+    enabled: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER_URI:http://localhost:8081/realms/bank-simulator}
+
+server:
+  port: ${SERVER_PORT:8086}
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when_authorized
+
+logging:
+  pattern:
+    console: '{"time":"%d{yyyy-MM-dd''T''HH:mm:ss.SSSXXX}","level":"%level","service":"simulation-engine","traceId":"%X{traceId:-}","correlationId":"%X{correlationId:-}","logger":"%logger{36}","message":"%replace(%msg){''[\r\n]'','' ''}"}%n'

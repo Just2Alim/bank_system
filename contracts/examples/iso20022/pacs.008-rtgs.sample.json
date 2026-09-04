@@ -1,0 +1,17 @@
+{
+  "messageType": "pacs.008.001.14",
+  "businessMessageId": "SIM-MSG-ORDA-20260904-0001",
+  "creationDateTime": "2026-09-04T09:15:00Z",
+  "instructionId": "SIM-INSTR-ORDA-20260904-0001",
+  "endToEndId": "SIM-E2E-DEMO-20260904-0001",
+  "rail": "RTGS",
+  "instructedAmount": {
+    "amount": "125000.00",
+    "currency": "KZT"
+  },
+  "debtorParticipantId": "SIM-PTCP-ORDA",
+  "debtorAccountId": "SIM-ORDA-ACC-DEMO0001",
+  "creditorParticipantId": "SIM-PTCP-NOMAD",
+  "creditorAccountId": "SIM-NOMAD-ACC-DEMO0042",
+  "remittanceInformation": "Synthetic equipment invoice SIM-INV-DEMO-0042"
+}

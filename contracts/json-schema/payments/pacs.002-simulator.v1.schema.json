@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bank-simulator.local/contracts/payments/pacs.002-simulator.v1.schema.json",
+  "title": "SimulatorPacs002V1",
+  "description": "A reduced JSON status message inspired by pacs.002.001.16 for simulator interoperability only.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "messageType",
+    "businessMessageId",
+    "creationDateTime",
+    "originalBusinessMessageId",
+    "paymentId",
+    "isoStatus",
+    "simulatorStatus"
+  ],
+  "properties": {
+    "messageType": {"const": "pacs.002.001.16"},
+    "businessMessageId": {
+      "type": "string",
+      "pattern": "^SIM-MSG-[A-Z0-9-]{8,64}$"
+    },
+    "creationDateTime": {"type": "string", "format": "date-time"},
+    "originalBusinessMessageId": {
+      "type": "string",
+      "pattern": "^SIM-MSG-[A-Z0-9-]{8,64}$"
+    },
+    "paymentId": {
+      "type": "string",
+      "pattern": "^SIM-PAY-[A-Z0-9-]{8,64}$"
+    },
+    "isoStatus": {
+      "type": "string",
+      "enum": ["ACTC", "ACSP", "ACSC", "PDNG", "RJCT"]
+    },
+    "simulatorStatus": {
+      "type": "string",
+      "enum": ["ACCEPTED", "QUEUED_LIQUIDITY", "QUEUED_CLEARING", "SETTLED", "REJECTED", "RETURN_PENDING", "RETURNED"]
+    },
+    "reasonCode": {
+      "type": "string",
+      "enum": ["INVALID_MESSAGE", "UNKNOWN_PARTICIPANT", "DUPLICATE_CONFLICT", "INSUFFICIENT_LIQUIDITY", "CYCLE_BLOCKED", "BENEFICIARY_UNAVAILABLE", "CUSTOMER_REQUEST"]
+    },
+    "additionalInformation": {
+      "type": "string",
+      "maxLength": 256
+    }
+  }
+}

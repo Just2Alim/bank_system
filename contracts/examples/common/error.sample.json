@@ -1,0 +1,10 @@
+{
+  "code": "INSUFFICIENT_AVAILABLE_FUNDS",
+  "message": "The account does not have enough available funds.",
+  "timestamp": "2026-09-04T09:15:00Z",
+  "trace_id": "11111111111111111111111111111111",
+  "request_id": "SIM-REQ-DEMO-20260904-0001",
+  "details": {
+    "accountId": "SIM-ORDA-ACC-DEMO0001"
+  }
+}

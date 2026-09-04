@@ -1,0 +1,296 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "National Payment Platform Simulator API",
+    "version": "1.0.0",
+    "description": "Fictional national rail for participant routing, aliases, RTGS, multilateral clearing, and final central settlement. ISO-like JSON is a deliberately reduced simulator subset."
+  },
+  "servers": [{"url": "http://national-payment-platform:8080"}],
+  "security": [{"participantJwt": []}],
+  "paths": {
+    "/iso/v1/messages": {
+      "post": {
+        "operationId": "submitIsoLikeMessage",
+        "description": "Participant comes from the service principal. Same sender/message ID and payload hash replays the stored result; changed content returns conflict.",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}, {"$ref": "#/components/parameters/IdempotencyKey"}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "../json-schema/payments/iso-message-simulator.v1.schema.json"}}}},
+        "responses": {
+          "202": {"$ref": "#/components/responses/CommandResult"},
+          "200": {"$ref": "#/components/responses/CommandResult"},
+          "409": {"$ref": "#/components/responses/Error"},
+          "422": {"$ref": "#/components/responses/Error"}
+        }
+      }
+    },
+    "/iso/v1/messages/{businessMessageId}": {
+      "get": {
+        "operationId": "getIsoLikeMessageOutcome",
+        "description": "Sender-scoped lookup for timeout recovery.",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}, {"$ref": "#/components/parameters/BusinessMessageId"}],
+        "responses": {
+          "200": {"description": "Latest status message.", "content": {"application/json": {"schema": {"$ref": "../json-schema/payments/pacs.002-simulator.v1.schema.json"}}}},
+          "404": {"$ref": "#/components/responses/Error"}
+        }
+      }
+    },
+    "/api/v1/payments/{paymentId}": {
+      "get": {
+        "operationId": "getNppPayment",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}, {"$ref": "#/components/parameters/PaymentId"}],
+        "responses": {
+          "200": {"description": "Authoritative NPP rail state.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Payment"}}}},
+          "404": {"$ref": "#/components/responses/Error"}
+        }
+      }
+    },
+    "/api/v1/participants/{participantId}/settlement-position": {
+      "get": {
+        "operationId": "getParticipantSettlementPosition",
+        "description": "A participant may read only its own position unless the operator role is present.",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}, {"$ref": "#/components/parameters/ParticipantId"}],
+        "responses": {
+          "200": {"description": "Current central participant position.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/SettlementPosition"}}}},
+          "403": {"$ref": "#/components/responses/Error"},
+          "404": {"$ref": "#/components/responses/Error"}
+        }
+      }
+    },
+    "/api/v1/aliases": {
+      "post": {
+        "operationId": "registerSyntheticAlias",
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}, {"$ref": "#/components/parameters/IdempotencyKey"}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AliasRegistration"}}}},
+        "responses": {
+          "201": {"description": "Alias registered for the authenticated participant.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AliasRecord"}}}},
+          "200": {"description": "Idempotent replay.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AliasRecord"}}}},
+          "409": {"$ref": "#/components/responses/Error"}
+        }
+      }
+    },
+    "/api/v1/aliases/resolve": {
+      "post": {
+        "operationId": "resolveSyntheticAlias",
+        "x-idempotency-exempt": true,
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["aliasToken"],
+                "properties": {"aliasToken": {"type": "string", "pattern": "^SIM-ALIAS-[A-Z0-9-]{8,64}$"}}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Short-lived version-bound resolution.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AliasResolution"}}}},
+          "404": {"$ref": "#/components/responses/Error"}
+        }
+      }
+    },
+    "/operator/v1/clearing/cycles": {
+      "get": {
+        "operationId": "listClearingCycles",
+        "security": [{"operatorJwt": []}],
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}, {"name": "status", "in": "query", "schema": {"type": "string", "enum": ["OPEN", "FROZEN", "SETTLEMENT_BLOCKED", "SETTLED"]}}],
+        "responses": {
+          "200": {
+            "description": "Clearing cycles.",
+            "content": {"application/json": {"schema": {"type": "object", "additionalProperties": false, "required": ["items"], "properties": {"items": {"type": "array", "items": {"$ref": "#/components/schemas/ClearingCycle"}}}}}}
+          }
+        }
+      }
+    },
+    "/operator/v1/clearing/cycles/{cycleId}/close": {
+      "post": {
+        "operationId": "closeClearingCycle",
+        "security": [{"operatorJwt": []}],
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}, {"$ref": "#/components/parameters/IdempotencyKey"}, {"$ref": "#/components/parameters/CycleId"}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["expectedVersion"],
+                "properties": {"expectedVersion": {"type": "integer", "minimum": 1}}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Cycle was atomically settled or blocked without a central journal.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ClearingCycle"}}}},
+          "409": {"$ref": "#/components/responses/Error"},
+          "422": {"$ref": "#/components/responses/Error"}
+        }
+      }
+    },
+    "/operator/v1/rtgs/queue/run": {
+      "post": {
+        "operationId": "runRtgsLiquidityQueue",
+        "security": [{"operatorJwt": []}],
+        "parameters": [{"$ref": "#/components/parameters/CorrelationId"}, {"$ref": "#/components/parameters/IdempotencyKey"}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["runId", "maxInstructions"],
+                "properties": {
+                  "runId": {"type": "string", "pattern": "^SIM-RTGS-RUN-[A-Z0-9-]{8,64}$"},
+                  "maxInstructions": {"type": "integer", "minimum": 1, "maximum": 1000}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Queue pass summary.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/QueueRunResult"}}}},
+          "409": {"$ref": "#/components/responses/Error"}
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "participantJwt": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT", "description": "Contains one simulator participant identity."},
+      "operatorJwt": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT", "description": "Restricted NPP operator role."}
+    },
+    "parameters": {
+      "CorrelationId": {"name": "X-Correlation-ID", "in": "header", "required": true, "schema": {"type": "string", "pattern": "^SIM-CORR-[A-Z0-9-]{8,64}$"}},
+      "IdempotencyKey": {"name": "Idempotency-Key", "in": "header", "required": true, "schema": {"type": "string", "pattern": "^SIM-IDEM-[A-Z0-9-]{8,96}$"}},
+      "BusinessMessageId": {"name": "businessMessageId", "in": "path", "required": true, "schema": {"type": "string", "pattern": "^SIM-MSG-[A-Z0-9-]{8,64}$"}},
+      "PaymentId": {"name": "paymentId", "in": "path", "required": true, "schema": {"type": "string", "pattern": "^SIM-PAY-[A-Z0-9-]{8,64}$"}},
+      "ParticipantId": {"name": "participantId", "in": "path", "required": true, "schema": {"$ref": "#/components/schemas/ParticipantId"}},
+      "CycleId": {"name": "cycleId", "in": "path", "required": true, "schema": {"type": "string", "pattern": "^SIM-CYCLE-[A-Z0-9-]{8,64}$"}}
+    },
+    "responses": {
+      "CommandResult": {
+        "description": "Submission receipt; query the payment/message resource for authoritative state.",
+        "headers": {"X-Correlation-ID": {"schema": {"type": "string"}}, "Idempotent-Replay": {"schema": {"type": "boolean"}}},
+        "content": {"application/json": {"schema": {"$ref": "../json-schema/common/command-receipt.v1.schema.json"}}}
+      },
+      "Error": {"description": "Safe error response.", "content": {"application/json": {"schema": {"$ref": "../json-schema/common/error.v1.schema.json"}}}}
+    },
+    "schemas": {
+      "Money": {"$ref": "../json-schema/common/money.v1.schema.json"},
+      "ParticipantId": {"type": "string", "pattern": "^SIM-PTCP-(ORDA|NOMAD|TENGRI)$"},
+      "Payment": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["paymentId", "businessMessageId", "rail", "status", "money", "debtorParticipantId", "creditorParticipantId", "createdAt", "updatedAt", "finalSettlement"],
+        "properties": {
+          "paymentId": {"type": "string", "pattern": "^SIM-PAY-[A-Z0-9-]{8,64}$"},
+          "businessMessageId": {"type": "string", "pattern": "^SIM-MSG-[A-Z0-9-]{8,64}$"},
+          "rail": {"type": "string", "enum": ["RTGS", "MSMP", "CLEARING", "RETURN"]},
+          "status": {"type": "string", "enum": ["RECEIVED", "VALIDATED", "QUEUED_LIQUIDITY", "QUEUED_CLEARING", "SETTLED", "REJECTED", "RETURN_PENDING", "RETURNED"]},
+          "money": {"$ref": "#/components/schemas/Money"},
+          "debtorParticipantId": {"$ref": "#/components/schemas/ParticipantId"},
+          "creditorParticipantId": {"$ref": "#/components/schemas/ParticipantId"},
+          "settlementReference": {"type": ["string", "null"], "pattern": "^SIM-SETTLE-[A-Z0-9-]{8,64}$"},
+          "finalSettlement": {"type": "boolean"},
+          "createdAt": {"type": "string", "format": "date-time"},
+          "updatedAt": {"type": "string", "format": "date-time"}
+        }
+      },
+      "SettlementPosition": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["participantId", "bookPosition", "queuedDebitTotal", "availableLiquidity", "version", "asOf"],
+        "properties": {
+          "participantId": {"$ref": "#/components/schemas/ParticipantId"},
+          "bookPosition": {"$ref": "#/components/schemas/Money"},
+          "queuedDebitTotal": {"$ref": "#/components/schemas/Money"},
+          "availableLiquidity": {"$ref": "#/components/schemas/Money"},
+          "version": {"type": "integer", "minimum": 1},
+          "asOf": {"type": "string", "format": "date-time"}
+        }
+      },
+      "AliasRegistration": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["registrationId", "aliasToken", "aliasType", "beneficiaryReference", "beneficiaryDisplayName"],
+        "properties": {
+          "registrationId": {"type": "string", "pattern": "^SIM-ALIAS-REG-[A-Z0-9-]{8,64}$"},
+          "aliasToken": {"type": "string", "pattern": "^SIM-ALIAS-[A-Z0-9-]{8,64}$"},
+          "aliasType": {"type": "string", "enum": ["CUSTOMER_TOKEN", "MERCHANT_QR"]},
+          "beneficiaryReference": {"type": "string", "pattern": "^SIM-BENEFICIARY-[A-Z0-9-]{4,64}$"},
+          "beneficiaryDisplayName": {"type": "string", "maxLength": 96}
+        }
+      },
+      "AliasRecord": {
+        "allOf": [
+          {"$ref": "#/components/schemas/AliasRegistration"},
+          {
+            "type": "object",
+            "required": ["participantId", "version", "status", "createdAt"],
+            "properties": {
+              "participantId": {"$ref": "#/components/schemas/ParticipantId"},
+              "version": {"type": "integer", "minimum": 1},
+              "status": {"type": "string", "enum": ["ACTIVE", "SUSPENDED", "REVOKED"]},
+              "createdAt": {"type": "string", "format": "date-time"}
+            }
+          }
+        ]
+      },
+      "AliasResolution": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["resolutionToken", "participantId", "beneficiaryReference", "beneficiaryDisplayName", "aliasVersion", "expiresAt"],
+        "properties": {
+          "resolutionToken": {"type": "string", "pattern": "^SIM-RESOLVE-[A-Z0-9-]{8,64}$"},
+          "participantId": {"$ref": "#/components/schemas/ParticipantId"},
+          "beneficiaryReference": {"type": "string", "pattern": "^SIM-BENEFICIARY-[A-Z0-9-]{4,64}$"},
+          "beneficiaryDisplayName": {"type": "string", "maxLength": 96},
+          "aliasVersion": {"type": "integer", "minimum": 1},
+          "expiresAt": {"type": "string", "format": "date-time"}
+        }
+      },
+      "ClearingCycle": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["cycleId", "status", "itemCount", "grossAmount", "netPositions", "version", "cutoffAt"],
+        "properties": {
+          "cycleId": {"type": "string", "pattern": "^SIM-CYCLE-[A-Z0-9-]{8,64}$"},
+          "status": {"type": "string", "enum": ["OPEN", "FROZEN", "SETTLEMENT_BLOCKED", "SETTLED"]},
+          "itemCount": {"type": "integer", "minimum": 0},
+          "grossAmount": {"$ref": "#/components/schemas/Money"},
+          "netPositions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["participantId", "direction", "money"],
+              "properties": {
+                "participantId": {"$ref": "#/components/schemas/ParticipantId"},
+                "direction": {"type": "string", "enum": ["DEBIT", "CREDIT", "FLAT"]},
+                "money": {"$ref": "#/components/schemas/Money"}
+              }
+            }
+          },
+          "settlementReference": {"type": ["string", "null"], "pattern": "^SIM-SETTLE-[A-Z0-9-]{8,64}$"},
+          "version": {"type": "integer", "minimum": 1},
+          "cutoffAt": {"type": "string", "format": "date-time"}
+        }
+      },
+      "QueueRunResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["runId", "examined", "settled", "stillQueued", "completedAt"],
+        "properties": {
+          "runId": {"type": "string", "pattern": "^SIM-RTGS-RUN-[A-Z0-9-]{8,64}$"},
+          "examined": {"type": "integer", "minimum": 0},
+          "settled": {"type": "integer", "minimum": 0},
+          "stillQueued": {"type": "integer", "minimum": 0},
+          "completedAt": {"type": "string", "format": "date-time"}
+        }
+      }
+    }
+  }
+}

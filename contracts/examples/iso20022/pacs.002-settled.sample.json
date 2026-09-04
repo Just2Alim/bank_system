@@ -1,0 +1,10 @@
+{
+  "messageType": "pacs.002.001.16",
+  "businessMessageId": "SIM-MSG-NPP-20260904-STATUS-0001",
+  "creationDateTime": "2026-09-04T09:15:01Z",
+  "originalBusinessMessageId": "SIM-MSG-ORDA-20260904-0001",
+  "paymentId": "SIM-PAY-RTGS-20260904-0001",
+  "isoStatus": "ACSC",
+  "simulatorStatus": "SETTLED",
+  "additionalInformation": "Final in the simulator settlement ledger"
+}

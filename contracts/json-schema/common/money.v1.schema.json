@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bank-simulator.local/contracts/common/money.v1.schema.json",
+  "title": "MoneyV1",
+  "description": "A non-negative monetary amount. JSON numbers are deliberately forbidden so decimal precision survives every boundary.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["amount", "currency"],
+  "properties": {
+    "amount": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,16})\\.[0-9]{2}$",
+      "examples": ["125000.00"]
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$",
+      "examples": ["KZT"]
+    }
+  }
+}
