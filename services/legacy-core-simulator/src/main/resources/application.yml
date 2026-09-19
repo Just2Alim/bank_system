@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: legacy-core-simulator
+  flyway:
+    enabled: true
+
+bank:
+  code: ORDA
+  core:
+    mode: native
+  seed:
+    enabled: true

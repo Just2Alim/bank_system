@@ -66,7 +66,7 @@ public class NativeCoreConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(name = "bank.seed.enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(name = "bank.seed.enabled", havingValue = "true")
     ApplicationRunner syntheticAccountSeeder(CoreBankingPort core, BankCode bankCode) {
         return arguments -> {
             seed(core, bankCode, "ALMATY-001", "Aruzhan S. (synthetic)", "250000.00");

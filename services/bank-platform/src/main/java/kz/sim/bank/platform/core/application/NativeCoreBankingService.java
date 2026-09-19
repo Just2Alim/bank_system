@@ -26,7 +26,7 @@ import kz.sim.bank.primitives.money.Money;
 import org.springframework.transaction.annotation.Transactional;
 
 /** Authoritative transactional application service used inside Nomad/Tengri and by Orda's legacy core. */
-public final class NativeCoreBankingService implements CoreBankingPort {
+public class NativeCoreBankingService implements CoreBankingPort {
 
     private final BankCode bankCode;
     private final CoreBankingStore store;

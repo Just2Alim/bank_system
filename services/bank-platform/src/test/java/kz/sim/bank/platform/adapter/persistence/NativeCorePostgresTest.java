@@ -54,6 +54,9 @@ class NativeCorePostgresTest {
 
     @Test
     void openingAndReplayAreAtomicIdempotentAndEmitAuditAndOutbox() {
+        long journalsBefore = count(Table.JOURNAL_TRANSACTION);
+        long auditBefore = count(Table.AUDIT_EVENT);
+        long outboxBefore = count(Table.OUTBOX_EVENT);
         var customerId = UUID.randomUUID();
         var command = new CoreBankingPort.OpenAccountCommand(
                 customerId, "Synthetic Customer", CurrencyCode.KZT, new BigDecimal("50000.00"));
@@ -64,9 +67,9 @@ class NativeCorePostgresTest {
 
         assertThat(replay).isEqualTo(first);
         assertThat(core.getBalance(first.id()).bookBalance().amount()).isEqualByComparingTo("50000.00");
-        assertThat(jdbc.queryForObject("select count(*) from journal_transaction", Long.class)).isEqualTo(1);
-        assertThat(jdbc.queryForObject("select count(*) from audit_event", Long.class)).isEqualTo(1);
-        assertThat(jdbc.queryForObject("select count(*) from outbox_event", Long.class)).isEqualTo(1);
+        assertThat(count(Table.JOURNAL_TRANSACTION) - journalsBefore).isEqualTo(1);
+        assertThat(count(Table.AUDIT_EVENT) - auditBefore).isEqualTo(1);
+        assertThat(count(Table.OUTBOX_EVENT) - outboxBefore).isEqualTo(1);
 
         var conflicting = new CoreBankingPort.OpenAccountCommand(
                 customerId, "Changed Name", CurrencyCode.KZT, new BigDecimal("50000.00"));
@@ -150,5 +153,21 @@ class NativeCorePostgresTest {
                 new CommandContext("fixture", "open-" + name),
                 new CoreBankingPort.OpenAccountCommand(
                         UUID.randomUUID(), name, CurrencyCode.KZT, new BigDecimal(balance)));
+    }
+
+    private long count(Table table) {
+        return jdbc.queryForObject("select count(*) from " + table.name, Long.class);
+    }
+
+    private enum Table {
+        JOURNAL_TRANSACTION("journal_transaction"),
+        AUDIT_EVENT("audit_event"),
+        OUTBOX_EVENT("outbox_event");
+
+        private final String name;
+
+        Table(String name) {
+            this.name = name;
+        }
     }
 }

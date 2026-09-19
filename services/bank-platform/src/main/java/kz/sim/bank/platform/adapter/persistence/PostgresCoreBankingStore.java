@@ -336,9 +336,11 @@ public final class PostgresCoreBankingStore implements CoreBankingStore {
 
     @Override
     public void lockIdempotency(String actorId, String operation, String key) {
-        jdbc.queryForObject(
+        jdbc.query(
                 "select pg_advisory_xact_lock(hashtextextended(?, 0))",
-                Long.class,
+                rs -> {
+                    // pg_advisory_xact_lock returns void; the successful query completion is the signal.
+                },
                 actorId + '\u001f' + operation + '\u001f' + key);
     }
 
