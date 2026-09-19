@@ -52,7 +52,7 @@ public interface CoreBankingPort {
             if (!currency.isMovementEnabled()) {
                 throw new IllegalArgumentException("Only KZT movements are enabled in this simulator scope");
             }
-            openingBalance = amount(openingBalance, "opening balance", true);
+            openingBalance = validatedAmount(openingBalance, "opening balance", true);
         }
     }
 
@@ -64,7 +64,7 @@ public interface CoreBankingPort {
             if (senderAccountId.equals(receiverAccountId)) {
                 throw new IllegalArgumentException("Sender and receiver must be different accounts");
             }
-            amount = amount(amount, "transfer amount", false);
+            amount = validatedAmount(amount, "transfer amount", false);
             narrative = text(narrative, "narrative", 180);
         }
     }
@@ -72,7 +72,7 @@ public interface CoreBankingPort {
     record PlaceHoldCommand(AccountId accountId, BigDecimal amount, Duration ttl) {
         public PlaceHoldCommand {
             Objects.requireNonNull(accountId, "account must not be null");
-            amount = amount(amount, "hold amount", false);
+            amount = validatedAmount(amount, "hold amount", false);
             Objects.requireNonNull(ttl, "hold ttl must not be null");
             if (ttl.isNegative() || ttl.isZero() || ttl.compareTo(Duration.ofDays(7)) > 0) {
                 throw new IllegalArgumentException("Hold ttl must be between one nanosecond and seven days");
@@ -122,7 +122,7 @@ public interface CoreBankingPort {
         }
     }
 
-    private static BigDecimal amount(BigDecimal value, String label, boolean zeroAllowed) {
+    private static BigDecimal validatedAmount(BigDecimal value, String label, boolean zeroAllowed) {
         Objects.requireNonNull(value, label + " must not be null");
         try {
             value = value.setScale(Money.SCALE, RoundingMode.UNNECESSARY);

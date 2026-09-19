@@ -3,6 +3,7 @@ package kz.sim.bank.platform.core.application;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -17,7 +18,9 @@ public final class RequestFingerprint {
         if (mapper == null) {
             throw new IllegalArgumentException("object mapper must not be null");
         }
-        this.canonicalMapper = mapper.copy().enable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY);
+        this.canonicalMapper = mapper.copy()
+                .enable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
+                .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
     }
 
     public String of(Object payload) {

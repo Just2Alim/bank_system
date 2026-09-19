@@ -21,6 +21,7 @@
 
     <modules>
         <module>libs</module>
+        <module>services</module>
     </modules>
 
     <properties>
@@ -41,6 +42,11 @@
             <dependency>
                 <groupId>kz.sim.bank</groupId>
                 <artifactId>banking-primitives</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>kz.sim.bank</groupId>
+                <artifactId>bank-platform</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

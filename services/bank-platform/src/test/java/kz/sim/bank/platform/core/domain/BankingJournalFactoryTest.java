@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Instant;
 import kz.sim.bank.primitives.identifier.AccountId;
+import kz.sim.bank.primitives.identifier.BankCode;
 import kz.sim.bank.primitives.identifier.CommandId;
 import kz.sim.bank.primitives.identifier.JournalId;
 import kz.sim.bank.primitives.ledger.LedgerSide;
@@ -19,11 +20,11 @@ class BankingJournalFactoryTest {
 
     @Test
     void opensCustomerLiabilityByDebitingFundingAssetAndCreditingCustomer() {
-        var funding = AccountId.random();
-        var customer = AccountId.random();
+        var funding = AccountId.random(BankCode.NOMAD);
+        var customer = AccountId.random(BankCode.NOMAD);
 
         var journal = factory.openingBalance(
-                JournalId.random(), CommandId.random(), now, funding, customer, Money.of("125000.00", CurrencyCode.KZT));
+                JournalId.random(BankCode.NOMAD), CommandId.random(), now, funding, customer, Money.of("125000.00", CurrencyCode.KZT));
 
         assertThat(journal.totalDebits()).isEqualTo(Money.of("125000.00", CurrencyCode.KZT));
         assertThat(journal.totalCredits()).isEqualTo(Money.of("125000.00", CurrencyCode.KZT));
@@ -36,11 +37,11 @@ class BankingJournalFactoryTest {
 
     @Test
     void internalTransferDebitsSenderLiabilityAndCreditsReceiverLiability() {
-        var sender = AccountId.random();
-        var receiver = AccountId.random();
+        var sender = AccountId.random(BankCode.NOMAD);
+        var receiver = AccountId.random(BankCode.NOMAD);
 
         var journal = factory.internalTransfer(
-                JournalId.random(), CommandId.random(), now, sender, receiver, Money.of("999.50", CurrencyCode.KZT));
+                JournalId.random(BankCode.NOMAD), CommandId.random(), now, sender, receiver, Money.of("999.50", CurrencyCode.KZT));
 
         assertThat(journal.postings())
                 .extracting(posting -> posting.accountId(), posting -> posting.side())
@@ -52,11 +53,11 @@ class BankingJournalFactoryTest {
     @Test
     void reversalCreatesNewBalancedJournalAndNeverMutatesOriginal() {
         var original = factory.internalTransfer(
-                JournalId.random(), CommandId.random(), now, AccountId.random(), AccountId.random(),
+                JournalId.random(BankCode.NOMAD), CommandId.random(), now, AccountId.random(BankCode.NOMAD), AccountId.random(BankCode.NOMAD),
                 Money.of("1500.00", CurrencyCode.KZT));
 
         var reversal = factory.reversal(
-                JournalId.random(), CommandId.random(), now.plusSeconds(5), original, "Operator correction");
+                JournalId.random(BankCode.NOMAD), CommandId.random(), now.plusSeconds(5), original, "Operator correction");
 
         assertThat(reversal.id()).isNotEqualTo(original.id());
         assertThat(reversal.reversalOf()).contains(original.id());
@@ -68,10 +69,10 @@ class BankingJournalFactoryTest {
 
     @Test
     void rejectsSameAccountTransferBeforeAJournalCanBeBuilt() {
-        var account = AccountId.random();
+        var account = AccountId.random(BankCode.NOMAD);
 
         assertThatThrownBy(() -> factory.internalTransfer(
-                        JournalId.random(), CommandId.random(), now, account, account,
+                        JournalId.random(BankCode.NOMAD), CommandId.random(), now, account, account,
                         Money.of("1.00", CurrencyCode.KZT)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("different accounts");
