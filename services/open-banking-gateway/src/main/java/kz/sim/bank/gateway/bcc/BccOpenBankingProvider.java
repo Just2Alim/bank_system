@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import kz.sim.bank.gateway.provider.AccountView;
+import kz.sim.bank.gateway.provider.ExternalBankException;
 import kz.sim.bank.gateway.provider.OpenBankingProvider;
 import kz.sim.bank.gateway.provider.TransactionView;
 import kz.sim.bank.gateway.provider.TransferCommand;
@@ -43,6 +44,7 @@ public final class BccOpenBankingProvider implements OpenBankingProvider {
                 .header("Authorization", "Bearer " + accessToken())
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve().body(JsonNode.class);
+        ensureSuccessful(root, "accounts");
         return array(root, "accounts", "data", "items").stream().map(this::mapAccount).toList();
     }
 
@@ -59,6 +61,7 @@ public final class BccOpenBankingProvider implements OpenBankingProvider {
                     .header("Authorization", "Bearer " + accessToken())
                     .accept(MediaType.APPLICATION_JSON)
                     .retrieve().body(JsonNode.class);
+            ensureSuccessful(root, "statement");
             for (var node : array(root, "transactions", "operations", "items", "data")) {
                 result.add(mapTransaction(node, account));
                 if (result.size() >= limit) break;
@@ -144,6 +147,13 @@ public final class BccOpenBankingProvider implements OpenBankingProvider {
             }
         }
         return List.of();
+    }
+
+    private static void ensureSuccessful(JsonNode root, String operation) {
+        if (root == null || !root.has("success") || root.path("success").asBoolean(true)) return;
+        var code = root.path("code").asText("UNKNOWN");
+        var reason = text(root, "reason", "description", "message").orElse("Bank sandbox returned an error");
+        throw new ExternalBankException("BCC " + operation + " request failed: " + code + " " + reason);
     }
 
     private static List<JsonNode> iterable(Iterator<JsonNode> iterator) {

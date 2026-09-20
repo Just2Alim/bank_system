@@ -1,6 +1,7 @@
 package kz.sim.bank.gateway.web;
 
 import java.util.Map;
+import kz.sim.bank.gateway.provider.ExternalBankException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -13,5 +14,11 @@ public class GatewayExceptionHandler {
     ResponseEntity<Map<String, Object>> badRequest(Exception exception) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
                 "error", Map.of("code", "INVALID_REQUEST", "message", exception.getMessage())));
+    }
+
+    @ExceptionHandler(ExternalBankException.class)
+    ResponseEntity<Map<String, Object>> externalBank(ExternalBankException exception) {
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(Map.of(
+                "error", Map.of("code", "EXTERNAL_BANK_ERROR", "message", exception.getMessage())));
     }
 }
