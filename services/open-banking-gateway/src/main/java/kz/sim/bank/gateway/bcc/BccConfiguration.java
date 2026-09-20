@@ -14,12 +14,16 @@ class BccConfiguration {
     @Bean
     BccProperties bccProperties(
             @Value("${bcc.token-url}") String tokenUrl,
-            @Value("${bcc.financial-base-url}") String financialBaseUrl,
+            @Value("${bcc.api-base-url}") String apiBaseUrl,
             @Value("${bcc.client-id}") String clientId,
             @Value("${bcc.client-secret}") String clientSecret,
             @Value("${bcc.app-id}") String appId,
-            @Value("${bcc.scope}") String scope) {
-        return new BccProperties(tokenUrl, financialBaseUrl, clientId, clientSecret, appId, scope);
+            @Value("${bcc.scope}") String scope,
+            @Value("${bcc.api-product}") String product,
+            @Value("${bcc.client-token}") String clientToken,
+            @Value("${bcc.product-code}") String productCode) {
+        return new BccProperties(tokenUrl, apiBaseUrl, clientId, clientSecret, appId, scope,
+                product, clientToken, productCode);
     }
 
     @Bean

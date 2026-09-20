@@ -39,9 +39,11 @@ public final class BccOpenBankingProvider implements OpenBankingProvider {
 
     @Override
     public List<AccountView> accounts() {
+        requireBusinessClientToken();
         JsonNode root = apiClient.get()
-                .uri(properties.financialBaseUrl() + "/" + properties.appId() + "/accounts")
+                .uri(accountsUri())
                 .header("Authorization", "Bearer " + accessToken())
+                .headers(this::applyBusinessHeaders)
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve().body(JsonNode.class);
         ensureSuccessful(root, "accounts");
@@ -55,10 +57,11 @@ public final class BccOpenBankingProvider implements OpenBankingProvider {
         var from = to.minusDays(30);
         for (var account : accounts()) {
             if (result.size() >= limit) break;
+            requireBusinessClientToken();
             JsonNode root = apiClient.get()
-                    .uri(properties.financialBaseUrl() + "/" + properties.appId() + "/accounts/"
-                            + account.iban() + "/statement/v2?dateFrom=" + from + "&dateTo=" + to)
+                    .uri(statementUri(account, from, to))
                     .header("Authorization", "Bearer " + accessToken())
+                    .headers(this::applyBusinessHeaders)
                     .accept(MediaType.APPLICATION_JSON)
                     .retrieve().body(JsonNode.class);
             ensureSuccessful(root, "statement");
@@ -78,8 +81,40 @@ public final class BccOpenBankingProvider implements OpenBankingProvider {
 
     @Override
     public ProviderStatus status() {
+        var product = properties.isBusinessAccountManagement()
+                ? "Business Account Management API sandbox"
+                : "Financial API sandbox";
         return new ProviderStatus("BCC_SANDBOX", "CONFIGURED", "READ_ONLY",
-                "Accounts and statements are read from Bank CenterCredit Financial API sandbox");
+                "Accounts and statements are read from Bank CenterCredit " + product);
+    }
+
+    private String accountsUri() {
+        if (properties.isBusinessAccountManagement()) {
+            return properties.apiBaseUrl() + "/accounts";
+        }
+        return properties.apiBaseUrl() + "/" + properties.appId() + "/accounts";
+    }
+
+    private String statementUri(AccountView account, LocalDate from, LocalDate to) {
+        if (properties.isBusinessAccountManagement()) {
+            return properties.apiBaseUrl() + "/accounts/" + account.iban()
+                    + "/statements?date_from=" + from + "&date_to=" + to + "&currency=" + account.currency();
+        }
+        return properties.apiBaseUrl() + "/" + properties.appId() + "/accounts/"
+                + account.iban() + "/statement/v2?dateFrom=" + from + "&dateTo=" + to;
+    }
+
+    private void requireBusinessClientToken() {
+        if (properties.isBusinessAccountManagement() && properties.clientToken().isBlank()) {
+            throw new ExternalBankException("BCC Business Account Management requires BCC_CLIENT_TOKEN "
+                    + "(x-client-token from the customer authorization flow)");
+        }
+    }
+
+    private void applyBusinessHeaders(org.springframework.http.HttpHeaders headers) {
+        if (!properties.isBusinessAccountManagement()) return;
+        headers.set("x-client-token", properties.clientToken());
+        headers.set("productCode", properties.productCode());
     }
 
     private AccountView mapAccount(JsonNode node) {

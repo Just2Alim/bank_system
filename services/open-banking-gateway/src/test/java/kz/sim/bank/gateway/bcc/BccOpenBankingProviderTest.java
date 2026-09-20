@@ -41,7 +41,8 @@ class BccOpenBankingProviderTest {
 
         var provider = new BccOpenBankingProvider(
                 new BccProperties("https://token.example/oauth/token", "https://api.example/financial",
-                        "client", "secret", "app-42", "bcc.application.financial.api"),
+                        "client", "secret", "app-42", "bcc.application.financial.api",
+                        "financial", "", "BusinessApi"),
                 tokenBuilder.build(), apiBuilder.build(),
                 Clock.fixed(Instant.parse("2026-09-21T00:00:00Z"), ZoneOffset.UTC));
 
@@ -73,7 +74,8 @@ class BccOpenBankingProviderTest {
 
         var provider = new BccOpenBankingProvider(
                 new BccProperties("https://token.example/oauth/token", "https://api.example/financial",
-                        "client", "secret", "app-42", "bcc.application.financial.api"),
+                        "client", "secret", "app-42", "bcc.application.financial.api",
+                        "financial", "", "BusinessApi"),
                 tokenBuilder.build(), apiBuilder.build(),
                 Clock.fixed(Instant.parse("2026-09-21T00:00:00Z"), ZoneOffset.UTC));
 
@@ -83,5 +85,19 @@ class BccOpenBankingProviderTest {
                 .hasMessageContaining("Unknow error");
         tokenServer.verify();
         apiServer.verify();
+    }
+
+    @Test
+    void businessAccountManagementRequiresClientToken() {
+        var provider = new BccOpenBankingProvider(
+                new BccProperties("https://token.example/oauth/token", "https://api.example/business-account-management",
+                        "client", "secret", "", "bcc.application.business.account.management",
+                        "business-account-management", "", "BusinessApi"),
+                RestClient.builder().build(), RestClient.builder().build(),
+                Clock.fixed(Instant.parse("2026-09-21T00:00:00Z"), ZoneOffset.UTC));
+
+        assertThatThrownBy(provider::accounts)
+                .isInstanceOf(ExternalBankException.class)
+                .hasMessageContaining("BCC_CLIENT_TOKEN");
     }
 }
