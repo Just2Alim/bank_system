@@ -34,7 +34,9 @@ import {
 } from '@mui/material';
 import type { SvgIconComponent } from '@mui/icons-material';
 import { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
+
+import { RouterNavLinkBehavior } from '@/components/RouterLinks';
 
 export type Workspace = 'customer' | 'operations';
 
@@ -75,7 +77,7 @@ export function AppShell({ workspace }: { workspace: Workspace }) {
   const drawer = (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
       <Toolbar sx={{ px: 2.5 }}>
-        <Stack direction="row" alignItems="center" gap={1.25}>
+        <Stack sx={{ flexDirection: 'row', alignItems: 'center', gap: 1.25 }}>
           <Box
             aria-hidden="true"
             sx={{
@@ -110,7 +112,7 @@ export function AppShell({ workspace }: { workspace: Workspace }) {
             return (
               <ListItemButton
                 key={item.to}
-                component={NavLink}
+                component={RouterNavLinkBehavior}
                 to={item.to}
                 onClick={() => setMobileOpen(false)}
                 sx={{
@@ -127,7 +129,7 @@ export function AppShell({ workspace }: { workspace: Workspace }) {
                 <ListItemIcon sx={{ minWidth: 38 }}>
                   <Icon fontSize="small" />
                 </ListItemIcon>
-                <ListItemText primary={item.label} slotProps={{ primary: { fontWeight: 650 } }} />
+                <ListItemText primary={item.label} slotProps={{ primary: { sx: { fontWeight: 650 } } }} />
               </ListItemButton>
             );
           })}
@@ -137,7 +139,7 @@ export function AppShell({ workspace }: { workspace: Workspace }) {
       <Divider />
       <Box sx={{ p: 2 }}>
         <Typography variant="caption" color="text.secondary">
-          Simulated data only. No real bank or payment network is connected.
+          Demo data or an explicitly configured bank sandbox. Production banking is never enabled here.
         </Typography>
       </Box>
     </Box>
@@ -164,7 +166,7 @@ export function AppShell({ workspace }: { workspace: Workspace }) {
               </IconButton>
             </Tooltip>
           )}
-          <Stack direction="row" alignItems="center" gap={1} sx={{ minWidth: 0 }}>
+          <Stack sx={{ minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 1 }}>
             <AssessmentOutlinedIcon color="primary" aria-hidden="true" />
             <Typography noWrap sx={{ fontWeight: 750 }}>
               {workspace === 'customer' ? 'Customer workspace' : 'Operations workspace'}
@@ -172,7 +174,7 @@ export function AppShell({ workspace }: { workspace: Workspace }) {
           </Stack>
           <Box sx={{ flex: 1 }} />
           <Button
-            component={NavLink}
+            component={RouterNavLinkBehavior}
             to={workspace === 'customer' ? '/ops/overview' : '/customer/accounts'}
             variant="outlined"
             size="small"
@@ -187,7 +189,7 @@ export function AppShell({ workspace }: { workspace: Workspace }) {
           </Button>
         </Toolbar>
       </AppBar>
-      <Box component="nav" aria-label="Primary">
+      <Box component="nav" aria-label={`${workspace} workspace`}>
         <Drawer
           variant={desktop ? 'permanent' : 'temporary'}
           open={desktop || mobileOpen}

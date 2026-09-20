@@ -37,7 +37,7 @@ export function TopologyPage() {
           <Stack spacing={2}>
             <Card variant="outlined">
               <CardContent>
-                <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" gap={1}>
+                <Stack sx={{ flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', gap: 1 }}>
                   <Typography sx={{ fontWeight: 750 }}>
                     {activeRoutes} active {activeRoutes === 1 ? 'route' : 'routes'}
                   </Typography>
@@ -68,8 +68,8 @@ export function TopologyPage() {
                   }}
                 >
                   <CardContent sx={{ width: '100%' }}>
-                    <Stack direction="row" justifyContent="space-between" alignItems="flex-start" gap={1}>
-                      <Stack direction="row" gap={1} alignItems="center">
+                    <Stack sx={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1 }}>
+                      <Stack sx={{ flexDirection: 'row', gap: 1, alignItems: 'center' }}>
                         <AccountTreeRoundedIcon color="primary" aria-hidden="true" />
                         <Box>
                           <Typography sx={{ fontWeight: 780 }}>{node.label}</Typography>
@@ -80,7 +80,7 @@ export function TopologyPage() {
                       </Stack>
                       <StatusBadge status={node.health} />
                     </Stack>
-                    <Stack direction="row" gap={2} sx={{ mt: 2 }}>
+                    <Stack sx={{ mt: 2, flexDirection: 'row', gap: 2 }}>
                       <Typography variant="body2">{node.throughputPerSecond.toFixed(1)} tx/s</Typography>
                       <Typography variant="body2" color="text.secondary">
                         p95 {node.p95LatencyMs.toFixed(0)} ms

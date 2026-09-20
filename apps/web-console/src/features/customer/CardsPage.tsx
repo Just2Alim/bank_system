@@ -36,7 +36,7 @@ export function CardsPage() {
           {cards.data?.map((card) => (
             <Card key={card.id}>
               <CardContent>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Stack sx={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                   <CreditCardRoundedIcon color="primary" sx={{ fontSize: 34 }} aria-hidden="true" />
                   <StatusBadge status={card.status} />
                 </Stack>

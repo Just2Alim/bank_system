@@ -3,6 +3,7 @@ import type { RouteObject } from 'react-router-dom';
 
 import { AppShell } from '@/layout/AppShell';
 import { AccountsPage } from '@/features/customer/AccountsPage';
+import { NewTransferPage } from '@/features/customer/NewTransferPage';
 import { CardsPage } from '@/features/customer/CardsPage';
 import { PaymentsPage } from '@/features/customer/PaymentsPage';
 import { TransactionDetailsPage } from '@/features/customer/TransactionDetailsPage';
@@ -13,7 +14,6 @@ import {
   IsoMessagesPage,
   KafkaEventsPage,
   LedgerExplorerPage,
-  NewTransferPage,
   OperationsOverviewPage,
   SettlementPage,
   SimulationControlPage,
@@ -22,7 +22,7 @@ import {
 } from '@/features/operations/OperationsPages';
 
 export const appRoutes: RouteObject[] = [
-  { path: '/', element: <Navigate to="/ops/overview" replace /> },
+  { path: '/', element: <Navigate to="/customer/accounts" replace /> },
   {
     path: '/customer',
     element: <AppShell workspace="customer" />,
@@ -55,6 +55,6 @@ export const appRoutes: RouteObject[] = [
   {
     path: '*',
     element: <AppShell workspace="operations" />,
-    children: [{ index: true, element: <NotFoundPage /> }],
+    children: [{ path: '*', element: <NotFoundPage /> }],
   },
 ];

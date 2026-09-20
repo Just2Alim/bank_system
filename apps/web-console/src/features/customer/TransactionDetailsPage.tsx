@@ -1,10 +1,11 @@
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 import { Button, Card, CardContent, Divider, Stack, Typography } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 
 import { AsyncState } from '@/components/AsyncState';
 import { PageHeader } from '@/components/PageHeader';
+import { RouterLinkBehavior } from '@/components/RouterLinks';
 import { StatusBadge } from '@/components/StatusBadge';
 import { getApi, toErrorMessage } from '@/lib/api';
 import { formatDateTime } from '@/lib/date';
@@ -26,7 +27,7 @@ export function TransactionDetailsPage() {
         title="Transaction details"
         description="Authoritative bank-side status and references for this simulated transaction."
         actions={
-          <Button component={Link} to="/customer/payments" startIcon={<ArrowBackRoundedIcon />}>
+          <Button component={RouterLinkBehavior} to="/customer/payments" startIcon={<ArrowBackRoundedIcon />}>
             Back to payments
           </Button>
         }
@@ -40,7 +41,7 @@ export function TransactionDetailsPage() {
         {transaction.data === undefined ? null : (
           <Card sx={{ maxWidth: 760 }}>
             <CardContent>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" gap={2}>
+              <Stack sx={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
                 <div>
                   <Typography variant="h2">{transaction.data.description}</Typography>
                   <Typography color="text.secondary">{transaction.data.counterparty}</Typography>
@@ -62,7 +63,11 @@ export function TransactionDetailsPage() {
                   ['Value date', formatDateTime(transaction.data.valueDate)],
                   ['Rejection reason', transaction.data.rejectionReason ?? 'Not applicable'],
                 ].map(([label, value]) => (
-                  <Stack key={label} direction={{ xs: 'column', sm: 'row' }} component="div" justifyContent="space-between" gap={0.5}>
+                  <Stack
+                    key={label}
+                    component="div"
+                    sx={{ flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', gap: 0.5 }}
+                  >
                     <Typography component="dt" variant="body2">{label}</Typography>
                     <Typography component="dd" variant="body2" sx={{ overflowWrap: 'anywhere' }}>{value}</Typography>
                   </Stack>

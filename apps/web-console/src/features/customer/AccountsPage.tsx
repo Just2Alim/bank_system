@@ -1,19 +1,23 @@
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
-import { Box, Button, Card, CardContent, Stack, Typography } from '@mui/material';
+import { Alert, Box, Button, Card, CardContent, Chip, Stack, Typography } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
 
 import { AsyncState } from '@/components/AsyncState';
 import { PageHeader } from '@/components/PageHeader';
+import { RouterLinkBehavior } from '@/components/RouterLinks';
 import { StatusBadge } from '@/components/StatusBadge';
 import { getApi, toErrorMessage } from '@/lib/api';
 import { formatMoney } from '@/lib/money';
-import { accountsSchema } from '@/lib/schemas';
+import { accountsSchema, integrationStatusSchema } from '@/lib/schemas';
 
 export function AccountsPage() {
   const accounts = useQuery({
     queryKey: ['customer', 'accounts'],
     queryFn: () => getApi('/api/v1/me/accounts', accountsSchema),
+  });
+  const integration = useQuery({
+    queryKey: ['integration', 'status'],
+    queryFn: () => getApi('/api/v1/integration/status', integrationStatusSchema),
   });
 
   return (
@@ -23,11 +27,20 @@ export function AccountsPage() {
         title="Accounts"
         description="Book balances come from the bank ledger. Available balances also account for active authorization holds."
         actions={
-          <Button component={Link} to="/customer/transfers/new" variant="contained" endIcon={<ArrowForwardRoundedIcon />}>
+          <Button component={RouterLinkBehavior} to="/customer/transfers/new" variant="contained" endIcon={<ArrowForwardRoundedIcon />}>
             Make a transfer
           </Button>
         }
       />
+      {integration.data === undefined ? null : (
+        <Alert
+          severity={integration.data.provider === 'BCC_SANDBOX' ? 'info' : 'warning'}
+          sx={{ mb: 2 }}
+          action={<Chip size="small" label={`${integration.data.provider} · ${integration.data.writeMode}`} />}
+        >
+          {integration.data.detail}
+        </Alert>
+      )}
       <AsyncState
         loading={accounts.isPending}
         label="Loading accounts"
@@ -47,7 +60,7 @@ export function AccountsPage() {
           {accounts.data?.map((account) => (
             <Card key={account.id}>
               <CardContent>
-                <Stack direction="row" justifyContent="space-between" alignItems="flex-start" gap={1}>
+                <Stack sx={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1 }}>
                   <Box>
                     <Typography variant="h2">{account.displayName}</Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>

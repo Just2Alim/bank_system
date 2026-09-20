@@ -1,5 +1,4 @@
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
-import SendRoundedIcon from '@mui/icons-material/SendRounded';
 import {
   Box,
   Button,
@@ -13,15 +12,14 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  TextField,
   Typography,
 } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
 
 import { AsyncState } from '@/components/AsyncState';
 import { MetricCard } from '@/components/MetricCard';
 import { PageHeader } from '@/components/PageHeader';
+import { RouterLinkBehavior } from '@/components/RouterLinks';
 import { StatusBadge } from '@/components/StatusBadge';
 import { getApi, toErrorMessage } from '@/lib/api';
 import { formatDateTime, formatDuration } from '@/lib/date';
@@ -86,7 +84,7 @@ export function OperationsOverviewPage() {
                 <Typography variant="h2">Service health</Typography>
                 <Stack spacing={1.25} sx={{ mt: 2 }}>
                   {overview.data.serviceHealth.map((service) => (
-                    <Stack key={service.id} direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" gap={1}>
+                    <Stack key={service.id} sx={{ flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', gap: 1 }}>
                       <Box>
                         <Typography sx={{ fontWeight: 700 }}>{service.name}</Typography>
                         <Typography variant="caption" color="text.secondary">
@@ -131,7 +129,7 @@ export function TransactionTracePage() {
             {trace.data.stages.map((stage) => (
               <Card key={stage.id} variant="outlined">
                 <CardContent>
-                  <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" gap={1}>
+                  <Stack sx={{ flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', gap: 1 }}>
                     <Box>
                       <Typography sx={{ fontWeight: 750 }}>{stage.name}</Typography>
                       <Typography variant="caption" color="text.secondary">
@@ -177,7 +175,7 @@ export function LedgerExplorerPage() {
         {journal.data === undefined ? null : (
           <Card variant="outlined">
             <CardContent>
-              <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" gap={1}>
+              <Stack sx={{ flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', gap: 1 }}>
                 <Box>
                   <Typography variant="h2">{journal.data.journalId}</Typography>
                   <Typography variant="body2" color="text.secondary">
@@ -325,7 +323,7 @@ export function IsoMessagesPage() {
           {messages.data?.map((message) => (
             <Card key={message.id} variant="outlined">
               <CardContent>
-                <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" gap={1}>
+                <Stack sx={{ flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', gap: 1 }}>
                   <Box>
                     <Typography sx={{ fontWeight: 750 }}>{message.messageType}</Typography>
                     <Typography variant="caption" color="text.secondary">
@@ -434,7 +432,7 @@ export function SimulationControlPage() {
         {simulation.data === undefined ? null : (
           <Card variant="outlined">
             <CardContent>
-              <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" gap={1}>
+              <Stack sx={{ flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', gap: 1 }}>
                 <Box>
                   <Typography variant="h2">{simulation.data.profile} profile</Typography>
                   <Typography variant="body2" color="text.secondary">
@@ -451,31 +449,6 @@ export function SimulationControlPage() {
   );
 }
 
-export function NewTransferPage() {
-  return (
-    <>
-      <PageHeader
-        eyebrow="Customer banking"
-        title="New transfer"
-        description="Prepare an idempotent simulated transfer command. Posting still belongs to the bank core ledger."
-      />
-      <Card variant="outlined" sx={{ maxWidth: 720 }}>
-        <CardContent>
-          <Stack spacing={2}>
-            <TextField label="From account" placeholder="KZ*** source account" />
-            <TextField label="Counterparty" placeholder="Phone alias, account, or QR merchant" />
-            <TextField label="Amount" placeholder="10000.00" />
-            <TextField label="Purpose" placeholder="Synthetic transfer purpose" multiline minRows={3} />
-            <Button disabled variant="contained" startIcon={<SendRoundedIcon />}>
-              Transfer command API pending
-            </Button>
-          </Stack>
-        </CardContent>
-      </Card>
-    </>
-  );
-}
-
 export function NotFoundPage() {
   return (
     <>
@@ -484,7 +457,7 @@ export function NotFoundPage() {
         title="Page not found"
         description="This simulator console route is not available."
         actions={
-          <Button component={Link} to="/ops/overview" startIcon={<ArrowBackRoundedIcon />}>
+          <Button component={RouterLinkBehavior} to="/ops/overview" startIcon={<ArrowBackRoundedIcon />}>
             Operations overview
           </Button>
         }

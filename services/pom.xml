@@ -19,5 +19,6 @@
         <module>bank-platform</module>
         <module>legacy-core-simulator</module>
         <module>simulation-engine</module>
+        <module>open-banking-gateway</module>
     </modules>
 </project>

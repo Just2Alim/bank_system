@@ -25,7 +25,7 @@ export function MetricCard({ label, value, deltaPercent, helper }: MetricCardPro
           {value}
         </Typography>
         {deltaPercent === undefined ? null : (
-          <Stack direction="row" alignItems="center" gap={0.5} sx={{ mt: 0.5 }}>
+          <Stack sx={{ mt: 0.5, flexDirection: 'row', alignItems: 'center', gap: 0.5 }}>
             <DeltaIcon aria-hidden="true" sx={{ fontSize: 16 }} />
             <Typography variant="caption" color="text.secondary">
               {Math.abs(delta).toFixed(1)}% from previous window

@@ -13,9 +13,18 @@ export const accountSchema = z.object({
   bookBalance: moneyStringSchema,
   availableBalance: moneyStringSchema,
   status: statusSchema,
+  provider: z.string().optional(),
 });
 export const accountsSchema = z.array(accountSchema);
 export type Account = z.infer<typeof accountSchema>;
+
+export const integrationStatusSchema = z.object({
+  provider: z.enum(['DEMO', 'BCC_SANDBOX']),
+  connection: statusSchema,
+  writeMode: z.enum(['DEMO_ONLY', 'READ_ONLY']),
+  detail: z.string(),
+});
+export type IntegrationStatus = z.infer<typeof integrationStatusSchema>;
 
 export const cardSchema = z.object({
   id: z.string(),
@@ -308,5 +317,6 @@ export const commandReceiptSchema = z.object({
   commandId: z.string(),
   resourceId: z.string(),
   status: statusSchema,
+  bookedAt: z.string().optional(),
 });
 export type CommandReceipt = z.infer<typeof commandReceiptSchema>;

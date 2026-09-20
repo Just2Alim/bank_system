@@ -1,0 +1,23 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: open-banking-gateway
+
+open-banking:
+  provider: ${OPEN_BANKING_PROVIDER:demo}
+
+bcc:
+  token-url: ${BCC_TOKEN_URL:https://api-sandbox.bcc.kz/bcc/production/v2/oauth/token}
+  financial-base-url: ${BCC_FINANCIAL_BASE_URL:https://api-sandbox.bcc.kz/bcc/production/v1/financial}
+  client-id: ${BCC_CLIENT_ID:}
+  client-secret: ${BCC_CLIENT_SECRET:}
+  app-id: ${BCC_APP_ID:}
+  scope: ${BCC_SCOPE:bcc.application.financial.api}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

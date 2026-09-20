@@ -12,11 +12,13 @@ export function PageHeader({ title, description, eyebrow, actions }: PageHeaderP
   return (
     <Stack
       component="header"
-      direction={{ xs: 'column', md: 'row' }}
-      alignItems={{ xs: 'flex-start', md: 'center' }}
-      justifyContent="space-between"
-      gap={2}
-      sx={{ mb: 3 }}
+      sx={{
+        mb: 3,
+        flexDirection: { xs: 'column', md: 'row' },
+        alignItems: { xs: 'flex-start', md: 'center' },
+        justifyContent: 'space-between',
+        gap: 2,
+      }}
     >
       <Box>
         {eyebrow === undefined ? null : (
