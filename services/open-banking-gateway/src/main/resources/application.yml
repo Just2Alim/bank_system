@@ -12,6 +12,7 @@ bcc:
   token-url: ${BCC_TOKEN_URL:https://api-sandbox.bcc.kz/bcc/production/v2/oauth/token}
   api-product: ${BCC_API_PRODUCT:financial}
   api-base-url: ${BCC_API_BASE_URL:${BCC_FINANCIAL_BASE_URL:https://api-sandbox.bcc.kz/bcc/production/v1/financial}}
+  auth-client-base-url: ${BCC_AUTH_CLIENT_BASE_URL:https://api-sandbox.bcc.kz/bcc/production/v1/auth-client}
   client-id: ${BCC_CLIENT_ID:}
   client-secret: ${BCC_CLIENT_SECRET:}
   app-id: ${BCC_APP_ID:}

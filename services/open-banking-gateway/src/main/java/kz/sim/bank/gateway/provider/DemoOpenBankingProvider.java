@@ -67,6 +67,18 @@ public final class DemoOpenBankingProvider implements OpenBankingProvider {
         return receipt;
     }
 
+    @Override
+    public CustomerAuthorizationUrl customerAuthorizationUrl(CustomerAuthorizationUrlRequest request) {
+        return new CustomerAuthorizationUrl(
+                "demo://customer-authorization-not-required",
+                request.redirectUri(), request.clientIdn(), request.lang(), request.scope());
+    }
+
+    @Override
+    public CustomerToken exchangeCustomerAuthorizationCode(CustomerAuthorizationCodeRequest request) {
+        return new CustomerToken("demo-client-token", "bearer", "demo-refresh-token", 300, "demo");
+    }
+
     private AccountView requiredAccount(String id) {
         var account = accounts.get(id);
         if (account == null) {

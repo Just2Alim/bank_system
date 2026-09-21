@@ -3,6 +3,7 @@ package kz.sim.bank.gateway.bcc;
 public record BccProperties(
         String tokenUrl,
         String apiBaseUrl,
+        String authClientBaseUrl,
         String clientId,
         String clientSecret,
         String appId,
@@ -13,6 +14,7 @@ public record BccProperties(
     public BccProperties {
         require(tokenUrl, "BCC_TOKEN_URL");
         require(apiBaseUrl, "BCC_API_BASE_URL");
+        require(authClientBaseUrl, "BCC_AUTH_CLIENT_BASE_URL");
         require(clientId, "BCC_CLIENT_ID");
         require(clientSecret, "BCC_CLIENT_SECRET");
         require(scope, "BCC_SCOPE");
@@ -31,6 +33,10 @@ public record BccProperties(
         if (!apiBaseUrl.startsWith("https://api-sandbox.bcc.kz")
                 && !apiBaseUrl.contains(".example")) {
             throw new IllegalArgumentException("Only BCC sandbox API endpoints are allowed");
+        }
+        if (!authClientBaseUrl.startsWith("https://api-sandbox.bcc.kz")
+                && !authClientBaseUrl.contains(".example")) {
+            throw new IllegalArgumentException("Only BCC sandbox auth-client endpoints are allowed");
         }
     }
 

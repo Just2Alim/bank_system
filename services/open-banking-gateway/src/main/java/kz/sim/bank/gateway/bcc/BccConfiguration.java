@@ -15,6 +15,7 @@ class BccConfiguration {
     BccProperties bccProperties(
             @Value("${bcc.token-url}") String tokenUrl,
             @Value("${bcc.api-base-url}") String apiBaseUrl,
+            @Value("${bcc.auth-client-base-url}") String authClientBaseUrl,
             @Value("${bcc.client-id}") String clientId,
             @Value("${bcc.client-secret}") String clientSecret,
             @Value("${bcc.app-id}") String appId,
@@ -22,7 +23,7 @@ class BccConfiguration {
             @Value("${bcc.api-product}") String product,
             @Value("${bcc.client-token}") String clientToken,
             @Value("${bcc.product-code}") String productCode) {
-        return new BccProperties(tokenUrl, apiBaseUrl, clientId, clientSecret, appId, scope,
+        return new BccProperties(tokenUrl, apiBaseUrl, authClientBaseUrl, clientId, clientSecret, appId, scope,
                 product, clientToken, productCode);
     }
 

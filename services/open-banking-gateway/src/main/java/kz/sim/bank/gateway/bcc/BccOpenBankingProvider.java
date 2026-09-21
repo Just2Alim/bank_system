@@ -10,10 +10,16 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import kz.sim.bank.gateway.provider.AccountView;
+import kz.sim.bank.gateway.provider.CustomerAuthorizationCodeRequest;
+import kz.sim.bank.gateway.provider.CustomerAuthorizationUrl;
+import kz.sim.bank.gateway.provider.CustomerAuthorizationUrlRequest;
+import kz.sim.bank.gateway.provider.CustomerToken;
 import kz.sim.bank.gateway.provider.ExternalBankException;
 import kz.sim.bank.gateway.provider.OpenBankingProvider;
 import kz.sim.bank.gateway.provider.TransactionView;
@@ -80,6 +86,46 @@ public final class BccOpenBankingProvider implements OpenBankingProvider {
     }
 
     @Override
+    public CustomerAuthorizationUrl customerAuthorizationUrl(CustomerAuthorizationUrlRequest request) {
+        var lang = blankToDefault(request.lang(), "ru");
+        var scope = blankToDefault(request.scope(), "oapi.business.account.api");
+        var body = new LinkedHashMap<String, String>();
+        body.put("redirect_uri", request.redirectUri());
+        body.put("client_idn", request.clientIdn());
+        body.put("lang", lang);
+        body.put("scope", scope);
+        JsonNode response = postAuthClient("/generate-auth-url", body);
+        var authUrl = response.path("authUrl").asText();
+        if (authUrl.isBlank()) {
+            throw new ExternalBankException("BCC customer authorization response has no authUrl");
+        }
+        return new CustomerAuthorizationUrl(authUrl, request.redirectUri(), request.clientIdn(), lang, scope);
+    }
+
+    @Override
+    public CustomerToken exchangeCustomerAuthorizationCode(CustomerAuthorizationCodeRequest request) {
+        var body = new LinkedHashMap<String, String>();
+        body.put("redirect_uri", request.redirectUri());
+        if (request.refreshToken() == null || request.refreshToken().isBlank()) {
+            body.put("grant_type", "authorization_code");
+            body.put("client_secret", properties.clientSecret());
+            body.put("code", request.code());
+        } else {
+            body.put("grant_type", "refresh_token");
+            body.put("client_secret", properties.clientSecret());
+            body.put("refresh_token", request.refreshToken());
+        }
+        JsonNode response = postAuthClient("/token", body);
+        var accessToken = response.path("access_token").asText();
+        if (accessToken.isBlank()) {
+            throw new ExternalBankException("BCC customer token response has no access_token");
+        }
+        return new CustomerToken(accessToken, response.path("token_type").asText("bearer"),
+                response.path("refresh_token").asText(""), response.path("expires_in").asLong(300),
+                response.path("scope").asText(""));
+    }
+
+    @Override
     public ProviderStatus status() {
         var product = properties.isBusinessAccountManagement()
                 ? "Business Account Management API sandbox"
@@ -102,6 +148,21 @@ public final class BccOpenBankingProvider implements OpenBankingProvider {
         }
         return properties.apiBaseUrl() + "/" + properties.appId() + "/accounts/"
                 + account.iban() + "/statement/v2?dateFrom=" + from + "&dateTo=" + to;
+    }
+
+    private JsonNode postAuthClient(String path, Map<String, String> body) {
+        JsonNode response = apiClient.post()
+                .uri(properties.authClientBaseUrl() + path)
+                .header("Authorization", "Bearer " + accessToken())
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .body(body)
+                .retrieve().body(JsonNode.class);
+        ensureSuccessful(response, "customer authorization");
+        if (response == null) {
+            throw new ExternalBankException("BCC customer authorization returned an empty response");
+        }
+        return response;
     }
 
     private void requireBusinessClientToken() {
@@ -214,6 +275,10 @@ public final class BccOpenBankingProvider implements OpenBankingProvider {
             }
         }
         return Optional.empty();
+    }
+
+    private static String blankToDefault(String value, String defaultValue) {
+        return value == null || value.isBlank() ? defaultValue : value;
     }
 
     private static Optional<Instant> instant(String value) {
